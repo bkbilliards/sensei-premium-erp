@@ -23,6 +23,7 @@ const app = {
         const { data: checks } = await supabase.from('active_checks').select('*');
         if(checks) { app.state.activeChecks = checks; app.renderChecks(); }
 
+        // ЗАГРУЗКА АРХИВА
         const today = new Date().toISOString().split('T')[0];
         const { data: archive } = await supabase.from('archived_checks').select('*').gte('closed_at', today).order('closed_at', { ascending: false });
         if(archive) { app.state.archivedChecks = archive; app.renderArchive(); }
@@ -92,6 +93,16 @@ const app = {
         $$('.overlay').forEach(p => p.classList.add('hidden'));
     },
 
+    logActivity: (text) => {
+        const feed = $('activity-feed'); if(!feed) return;
+        const time = new Date().toLocaleTimeString('ru-RU').slice(0,5);
+        const item = document.createElement('div');
+        item.className = `feed-item`;
+        item.innerHTML = `<span class="feed-time">${time}</span> <span class="text-white">${text}</span>`;
+        feed.prepend(item);
+        if(feed.children.length > 30) feed.lastChild.remove();
+    },
+
     renderChecks: () => {
         const list = $('waiting-payments-list');
         const count = $('waiting-count');
@@ -116,65 +127,68 @@ const app = {
                 <div class="payment-actions">
                     <button class="btn-dark btn-sm success-text" onclick="app.confirmPay('НАЛ', ${c.id})">💵 НАЛ</button>
                     <button class="btn-dark btn-sm blue-text" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
-                    <button class="btn-dark btn-sm" onclick="app.openReceipt(${c.id})">🧾 ЧЕК</button>
+                    <button class="btn-dark btn-sm" onclick="app.ui.toast('Чек в WhatsApp', 'success')">🧾 ЧЕК</button>
                     <button class="btn-dark btn-sm" onclick="app.ui.toast('Разделение счета', 'warning')">👥 РАЗДЕЛИТЬ</button>
                 </div>
             </div>`;
         }).join('');
     },
 
+    // РЕНДЕР АРХИВА И KPI
     renderArchive: () => {
         const list = $('archive-list');
         if (!list) return;
 
-        let totalSum = 0;
-        let cashSum = 0;
-        let qrSum = 0;
+        let totalSum = 0; let cashSum = 0; let qrSum = 0;
+        let barSum = 0; let rentSum = 0;
 
         if (app.state.archivedChecks.length === 0) {
-            list.innerHTML = '<tr><td colspan="8" class="text-center py-15 muted-text">Чеков пока нет</td></tr>';
+            list.innerHTML = '<tr><td colspan="10" class="text-center py-15 muted-text">Чеков пока нет</td></tr>';
         } else {
             list.innerHTML = app.state.archivedChecks.map(c => {
-                totalSum += Number(c.total);
-                if (c.pay_method === 'НАЛ') cashSum += Number(c.total);
-                if (c.pay_method === 'QR') qrSum += Number(c.total);
+                let total = Number(c.total); let bar = Number(c.bar_amount || 0); let rent = Number(c.time_amount || total);
+                totalSum += total; barSum += bar; rentSum += rent;
+                if (c.pay_method === 'НАЛ') cashSum += total;
+                if (c.pay_method === 'QR') qrSum += total;
 
                 let timeStr = new Date(c.closed_at).toLocaleTimeString('ru-RU').slice(0,5);
                 let tagClass = c.pay_method === 'НАЛ' ? 'nal' : 'qr';
+                let dur = app.math.formatTime(c.played_ms || 0).slice(0,5); // Только ЧЧ:ММ
 
                 return `
-                <tr>
+                <tr onclick="app.openAuditModal(${c.id})">
                     <td class="muted-text font-mono">${timeStr}</td>
                     <td><b>Ст. ${c.table_id}</b></td>
                     <td>${c.guest_name}</td>
-                    <td class="gold-text">${Number(c.time_amount).toLocaleString()} ₸</td>
-                    <td class="text-white">${Number(c.bar_amount).toLocaleString()} ₸</td>
-                    <td class="gold-text bold text-14">${Number(c.total).toLocaleString()} ₸</td>
+                    <td class="font-mono text-white">${dur}</td>
+                    <td class="gray-text">${rent.toLocaleString()} ₸</td>
+                    <td class="gray-text">${bar.toLocaleString()} ₸</td>
+                    <td class="gold-text bold text-14">${total.toLocaleString()} ₸</td>
                     <td><span class="pay-tag ${tagClass}">${c.pay_method}</span></td>
+                    <td><span class="badge badge-green">✅ Оплачено</span></td>
                     <td class="text-right muted-text">${c.created_by}</td>
                 </tr>`;
             }).join('');
         }
 
-        if($('arch-total-sum')) $('arch-total-sum').innerText = totalSum.toLocaleString() + ' ₸';
-        if($('arch-cash-sum')) $('arch-cash-sum').innerText = cashSum.toLocaleString() + ' ₸';
-        if($('arch-qr-sum')) $('arch-qr-sum').innerText = qrSum.toLocaleString() + ' ₸';
-        if($('arch-count')) $('arch-count').innerText = app.state.archivedChecks.length;
+        // Обновляем KPI Дашборд
+        if($('f-total')) $('f-total').innerText = totalSum.toLocaleString() + ' ₸';
+        if($('f-cash')) $('f-cash').innerText = cashSum.toLocaleString() + ' ₸';
+        if($('f-qr')) $('f-qr').innerText = qrSum.toLocaleString() + ' ₸';
+        if($('f-tables')) $('f-tables').innerText = rentSum.toLocaleString() + ' ₸';
+        if($('f-bar')) $('f-bar').innerText = barSum.toLocaleString() + ' ₸';
     },
 
-    openReceipt: (id) => {
-        let c = app.state.activeChecks.find(x => x.id === id);
-        if(!c) {
-            let t = app.state.tables.find(x => x.id === id);
-            if(!t || t.status !== 'В ИГРЕ') return;
-            c = { table_id: t.id, guest_name: t.active_check_id || 'Гость', played_ms: (t.accumulated_time || 0) + (Date.now() - t.started_at), time_amount: app.math.getCost(t), total: app.math.getCost(t) };
-        }
-        $('rec-table').innerText = c.table_id;
-        $('rec-guest').innerText = c.guest_name;
-        $('rec-time').innerText = app.math.formatTime(c.played_ms || 0);
-        $('rec-time-sum').innerText = c.time_amount.toLocaleString() + ' ₸';
-        $('rec-total').innerText = c.total.toLocaleString() + ' ₸';
-        $('modal-receipt').classList.remove('hidden');
+    openAuditModal: (id) => {
+        let c = app.state.archivedChecks.find(x => x.id === id);
+        if(!c) return;
+        $('audit-id').innerText = '#' + c.id.toString().slice(-4);
+        $('audit-table').innerText = 'СТОЛ ' + c.table_id;
+        $('audit-total').innerText = c.total.toLocaleString() + ' ₸';
+        $('audit-time').innerText = app.math.formatTime(c.played_ms || 0);
+        $('audit-rent').innerText = c.time_amount.toLocaleString() + ' ₸';
+        $('audit-method').innerText = '✅ ' + c.pay_method;
+        $('modal-audit').classList.remove('hidden');
     },
 
     confirmPay: async (method, overrideId = null) => {
@@ -193,13 +207,15 @@ const app = {
             time_amount: checkToArchive.time_amount,
             total: checkToArchive.total,
             pay_method: method,
-            created_by: checkToArchive.created_by
+            created_by: checkToArchive.created_by,
+            played_ms: checkToArchive.played_ms
         }]);
 
         await supabase.from('active_checks').delete().eq('id', id);
         
         app.closeModals();
         app.ui.toast(`Оплата ${method} проведена`, 'success');
+        app.logActivity(`Оплата чека (${method})`);
     },
 
     math: {
@@ -235,8 +251,6 @@ const app = {
         if (!app.session.isAuth) return;
         let liveRevenue = 0;
         let activeCount = 0;
-        let topTable = null;
-        let maxCost = 0;
         
         app.state.tables.forEach(t => {
             if (t.status === 'В ИГРЕ') {
@@ -246,12 +260,11 @@ const app = {
                 let cost = app.math.getCost(t);
                 liveRevenue += cost;
                 
-                if (cost > maxCost) { maxCost = cost; topTable = t.id; }
-                
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
                 if (timerEl) {
                     timerEl.innerText = app.math.formatTime(ms);
+                    timerEl.className = 't-timer ' + (ms < 3600000 ? 'timer-green' : (ms < 10800000 ? 'timer-yellow' : 'timer-red'));
                 }
                 if (sumEl) sumEl.innerText = cost.toLocaleString() + " ₸";
             }
@@ -259,12 +272,10 @@ const app = {
         
         if($('head-tables-rev')) $('head-tables-rev').innerText = liveRevenue.toLocaleString() + " ₸";
         if($('head-active-tables')) $('head-active-tables').innerText = `${activeCount} / 6`;
-        if($('head-total')) $('head-total').innerText = (liveRevenue).toLocaleString() + " ₸";
-        if($('head-avg')) $('head-avg').innerText = activeCount > 0 ? Math.floor(liveRevenue/activeCount).toLocaleString() + " ₸" : "0 ₸";
-        if($('head-top')) $('head-top').innerText = topTable ? `Стол ${topTable}` : "--";
     },
 
     setupNavigation: () => {
+        window.app.openArchiveReceipt = app.openAuditModal; // Для доступа из HTML
         $$('.nav-btn, .m-nav-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const tabId = e.currentTarget.dataset.tab;
