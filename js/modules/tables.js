@@ -13,17 +13,17 @@ export function initTables(app, supabase) {
                 let cost = isPlaying ? app.math.getCost(t) : 0;
                 let statusText = isPlaying ? (t.paused ? 'Пауза' : 'В игре') : 'Свободен';
                 
-                // ЛОГИКА ERP: Кнопки меняются от статуса
+                // ЛОГИКА КНОПОК ПО ИЕРАРХИИ
                 let btnsFree = `
                     <button class="btn-gold flex-1" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
-                    <button class="btn-dark" style="width: 60px;" onclick="app.ui.toast('Бронь', 'warning')">📅</button>
-                    <button class="btn-dark" style="width: 60px;" onclick="app.ui.toast('Настр', 'warning')">⚙️</button>`;
+                    <button class="btn-dark" style="width: 80px;" onclick="app.ui.toast('Бронь', 'warning')">📅 БРОНЬ</button>
+                    <button class="btn-dark" style="width: 80px;" onclick="app.ui.toast('Настр', 'warning')">⚙ СТОЛ</button>`;
                 
                 let btnsActive = `
                     <button class="btn-danger flex-1" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
-                    <button class="btn-dark" style="width: 50px;" onclick="app.ui.toast('Бар', 'warning')">🍹</button>
+                    <button class="btn-gold" style="width: 60px;" onclick="app.ui.toast('Бар', 'warning')">🍹 БАР</button>
                     <button class="btn-dark" style="width: 50px;" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶' : '⏸'}</button>
-                    <button class="btn-dark" style="width: 50px;" onclick="app.ui.toast('Чек', 'success')">🧾</button>`;
+                    <button class="btn-dark" style="width: 50px;" onclick="app.ui.toast('Предчек', 'success')">🧾</button>`;
 
                 return `
                 <div class="table-card ${cls}">
@@ -38,8 +38,7 @@ export function initTables(app, supabase) {
                         </div>
                         ${isPlaying ? `
                         <div class="flex-column text-right gap-5">
-                            <span class="badge" style="background:rgba(255,255,255,0.05); color:#828282;">👤 ${t.active_check_id || 'Гость'}</span>
-                            <span class="badge" style="background:rgba(212,175,55,0.1); color:var(--gold);">🍹 0 ₸</span>
+                            <span class="muted-text">👤 ${t.active_check_id || 'Гость'}</span>
                         </div>` : ''}
                     </div>
                     
