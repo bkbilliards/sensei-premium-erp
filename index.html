@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENSEI ERP X | Fast UX</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=9.0">
+    <title>SENSEI ERP X | Business Logic</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=10.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div id="toast-container" class="toast-container"></div>
 
     <div class="floating-dock hide-mobile no-print">
-        <button class="dock-btn bar-glow" title="Быстрый Бар (F1)" onclick="app.ui.toast('Быстрый бар скоро', 'warning')">🍹</button>
-        <button class="dock-btn debt-glow" title="Долг (F2)" onclick="app.ui.toast('Долги скоро', 'warning')">📓</button>
-        <button class="dock-btn danger-glow" title="Инцидент" onclick="app.ui.toast('Инцидент!', 'danger')">⚠️</button>
+        <button class="dock-btn bar-glow" title="Быстрый Бар (F1)" onclick="app.ui.toast('Вызов бара', 'warning')">🍹</button>
+        <button class="dock-btn debt-glow" title="Долг (F2)" onclick="app.ui.toast('Панель долгов', 'warning')">📓</button>
+        <button class="dock-btn danger-glow" title="Инцидент" onclick="app.ui.toast('Внимание!', 'danger')">⚠️</button>
     </div>
 
     <div id="authScreen" class="auth-screen active">
@@ -100,21 +100,41 @@
 
     <div id="modal-pay" class="overlay hidden">
         <div class="glass-card fast-pay-card">
-            <h2 class="gold-text mb-20 text-center uppercase text-14">Оплата счета</h2>
+            <h2 class="gold-text mb-20 text-center uppercase text-14">ОПЛАТА СЧЕТА</h2>
             <div class="huge-text text-center text-white mb-30" id="pay-sum">0 ₸</div>
-            
             <div class="flex-row gap-10 mb-30">
                 <button class="btn-dark flex-1 pay-method-btn" onclick="app.setPayMethod('НАЛ', this)">💵 НАЛ</button>
                 <button class="btn-dark flex-1 pay-method-btn" onclick="app.setPayMethod('QR', this)">📱 QR</button>
+                <button class="btn-dark flex-1 pay-method-btn" onclick="app.setPayMethod('MIX', this)">💳 МИКС</button>
             </div>
-            
-            <input type="hidden" id="pay-check-id">
-            <input type="hidden" id="pay-method" value="">
-            
+            <input type="hidden" id="pay-check-id"><input type="hidden" id="pay-method" value="">
             <div class="flex-row gap-10">
-                <button class="btn-secondary flex-1" onclick="app.closePayModal()">ОТМЕНА</button>
+                <button class="btn-secondary flex-1" onclick="app.closeModals()">ОТМЕНА</button>
                 <button class="btn-gold flex-1 shadow-gold" onclick="app.confirmPay()">ПОДТВЕРДИТЬ</button>
             </div>
+        </div>
+    </div>
+
+    <div id="modal-receipt" class="overlay hidden">
+        <div class="receipt-card">
+            <div class="text-center mb-15">
+                <h2 class="gold-text text-18 uppercase mb-5">SENSEI CLUB</h2>
+                <div class="muted-text text-10">ПРЕДВАРИТЕЛЬНЫЙ СЧЕТ</div>
+            </div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-line"><span>Стол:</span><span id="rec-table">--</span></div>
+            <div class="receipt-line"><span>Гость:</span><span id="rec-guest">--</span></div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-line"><span>Время игры:</span><span id="rec-time">--</span></div>
+            <div class="receipt-line"><span>Сумма игры:</span><span id="rec-time-sum">--</span></div>
+            <div class="receipt-line"><span>Бар:</span><span>0 ₸</span></div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-total"><span>ИТОГО:</span><span id="rec-total" class="gold-text">0 ₸</span></div>
+            <div class="flex-row gap-10 mt-30 no-print">
+                <button class="btn-dark flex-1" onclick="app.ui.toast('Отправка...', 'success')">📲 WhatsApp</button>
+                <button class="btn-dark flex-1" onclick="window.print()">🖨️ Печать</button>
+            </div>
+            <button class="btn-secondary w-100 mt-10 no-print" onclick="app.closeModals()">ЗАКРЫТЬ</button>
         </div>
     </div>
 
@@ -134,6 +154,24 @@
         <button onclick="app.tables.confirmStop()" class="btn-danger big-btn shadow-red mt-auto mb-20">ВЫСТАВИТЬ СЧЕТ</button>
     </div>
 
-    <script type="module" src="js/app.js?v=9.0"></script>
+    <div id="side-fast-bar" class="side-panel">
+        <div class="flex-between mb-30">
+            <h2 class="gold-text">БАР: СТОЛ <span id="bar-table-id"></span></h2>
+            <div class="modal-close" onclick="app.ui.closeSidePanel('side-fast-bar')">✕</div>
+        </div>
+        <div class="input-group mb-20"><input type="text" class="cyber-input" placeholder="Поиск товара..."></div>
+        <div class="bar-grid">
+            <div class="bar-item" onclick="app.tables.addBarItem(this)">🥤 Cola <span>700 ₸</span></div>
+            <div class="bar-item" onclick="app.tables.addBarItem(this)">⚡ RedBull <span>1500 ₸</span></div>
+            <div class="bar-item" onclick="app.tables.addBarItem(this)">☕ Кофе <span>1000 ₸</span></div>
+            <div class="bar-item" onclick="app.tables.addBarItem(this)">🧃 Сок <span>1200 ₸</span></div>
+        </div>
+        <div class="mt-auto glass-card text-center mb-20">
+            <div class="muted-text mb-5">БАР ИТОГО:</div>
+            <div class="text-24 gold-text bold">0 ₸</div>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js?v=10.0"></script>
 </body>
 </html>
