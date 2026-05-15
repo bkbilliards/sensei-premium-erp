@@ -44,7 +44,7 @@ const app = {
                 let ms = Date.now() - app.state.shiftStart;
                 let h = Math.floor(ms / 3600000);
                 let m = Math.floor((ms % 3600000) / 60000);
-                shiftClock.innerText = `Смена: ${String(h).padStart(2,'0')}ч ${String(m).padStart(2,'0')}м`;
+                shiftClock.innerText = `СМЕНА: ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
             }
             app.tick();
         }, 1000);
@@ -72,8 +72,8 @@ const app = {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator(); const gain = ctx.createGain();
                 osc.connect(gain); gain.connect(ctx.destination);
-                if(type === 'start') { osc.frequency.setValueAtTime(600, ctx.currentTime); osc.type = 'sine'; gain.gain.setValueAtTime(0.05, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1); osc.start(); osc.stop(ctx.currentTime + 0.1); }
-                if(type === 'pay') { osc.frequency.setValueAtTime(800, ctx.currentTime); osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.1); osc.type = 'square'; gain.gain.setValueAtTime(0.05, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2); osc.start(); osc.stop(ctx.currentTime + 0.2); }
+                if(type === 'start') { osc.frequency.setValueAtTime(600, ctx.currentTime); osc.type = 'sine'; gain.gain.setValueAtTime(0.02, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1); osc.start(); osc.stop(ctx.currentTime + 0.1); }
+                if(type === 'pay') { osc.frequency.setValueAtTime(800, ctx.currentTime); osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.1); osc.type = 'square'; gain.gain.setValueAtTime(0.02, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2); osc.start(); osc.stop(ctx.currentTime + 0.2); }
             } catch(e){}
         }
     },
@@ -83,14 +83,14 @@ const app = {
         $$('.overlay').forEach(p => p.classList.add('hidden'));
     },
 
-    // ГОРИЗОНТАЛЬНЫЕ СТРОКИ ОПЛАТЫ
+    // ГОРИЗОНТАЛЬНЫЕ СТРОКИ ОПЛАТЫ (МАТОВЫЕ)
     renderChecks: () => {
         const list = $('waiting-payments-list');
         const count = $('waiting-count');
         if (!list || !count) return;
         count.innerText = app.state.activeChecks.length;
         if (app.state.activeChecks.length === 0) {
-            list.innerHTML = '<div class="muted-text text-center py-10 w-100">Все счета оплачены</div>';
+            list.innerHTML = '<div class="muted-text py-10 w-100">Все счета оплачены</div>';
             return;
         }
         
@@ -101,18 +101,34 @@ const app = {
             return `
             <div class="payment-row ${urgencyClass}">
                 <div class="payment-info">
-                    <b class="text-white text-14">${c.guest_name}</b>
-                    <span class="muted-text">Стол ${c.table_id}</span>
+                    <span class="badge" style="background: rgba(255,255,255,0.05); color: var(--gray);">🎱 Ст. ${c.table_id}</span>
+                    <b class="text-white text-12">${c.guest_name}</b>
                 </div>
                 <div class="payment-sum">${c.total.toLocaleString()} ₸</div>
                 <div class="payment-actions">
-                    <button class="btn-gold btn-sm" onclick="app.confirmPay('НАЛ', ${c.id})">💵 НАЛ</button>
-                    <button class="btn-dark btn-sm blue-text" style="border-color:rgba(10,132,255,0.3);" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
-                    <button class="btn-secondary btn-sm" onclick="app.ui.toast('Чек готов', 'success')">🧾 ЧЕК</button>
-                    <button class="btn-secondary btn-sm" onclick="app.ui.toast('Счет разделен', 'warning')">👥 РАЗДЕЛИТЬ</button>
+                    <button class="btn-dark btn-sm success-text" onclick="app.confirmPay('НАЛ', ${c.id})">💵 НАЛ</button>
+                    <button class="btn-dark btn-sm blue-text" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
+                    <button class="btn-dark btn-sm" onclick="app.openReceipt(${c.id})">🧾 ЧЕК</button>
+                    <button class="btn-dark btn-sm" onclick="app.ui.toast('Разделение счета', 'warning')">👥 РАЗДЕЛИТЬ</button>
                 </div>
             </div>`;
         }).join('');
+    },
+
+    openReceipt: (id) => {
+        let c = app.state.activeChecks.find(x => x.id === id);
+        // Если вызвали прямо со стола (предчек)
+        if(!c) {
+            let t = app.state.tables.find(x => x.id === id);
+            if(!t || t.status !== 'В ИГРЕ') return;
+            c = { table_id: t.id, guest_name: t.active_check_id || 'Гость', played_ms: (t.accumulated_time || 0) + (Date.now() - t.started_at), time_amount: app.math.getCost(t), total: app.math.getCost(t) };
+        }
+        $('rec-table').innerText = c.table_id;
+        $('rec-guest').innerText = c.guest_name;
+        $('rec-time').innerText = app.math.formatTime(c.played_ms || 0);
+        $('rec-time-sum').innerText = c.time_amount.toLocaleString() + ' ₸';
+        $('rec-total').innerText = c.total.toLocaleString() + ' ₸';
+        $('modal-receipt').classList.remove('hidden');
     },
 
     confirmPay: async (method, overrideId = null) => {
@@ -174,7 +190,6 @@ const app = {
                 let sumEl = $(`sum-${t.id}`);
                 if (timerEl) {
                     timerEl.innerText = app.math.formatTime(ms);
-                    timerEl.className = 't-timer ' + (ms < 3600000 ? 'timer-green' : (ms < 10800000 ? 'timer-yellow' : 'timer-red'));
                 }
                 if (sumEl) sumEl.innerText = cost.toLocaleString() + " ₸";
             }
