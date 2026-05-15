@@ -39,7 +39,6 @@ const app = {
             let clock = $('live-clock');
             if (clock) clock.innerText = new Date().toLocaleTimeString('ru-RU').slice(0,5);
             
-            // Таймер смены
             let shiftClock = $('shift-clock');
             if (shiftClock && app.session.isAuth) {
                 let ms = Date.now() - app.state.shiftStart;
@@ -94,25 +93,21 @@ const app = {
         if(feed.children.length > 20) feed.lastChild.remove();
     },
 
-    // КАРТОЧКИ ОПЛАТЫ СО ВСЕМИ КНОПКАМИ ERP
     renderChecks: () => {
         const list = $('waiting-payments-list');
         const count = $('waiting-count');
         if (!list || !count) return;
         count.innerText = app.state.activeChecks.length;
         if (app.state.activeChecks.length === 0) {
-            list.innerHTML = '<div class="muted-text text-center py-10 w-100">Все счета закрыты</div>';
+            list.innerHTML = '<div class="muted-text text-center py-10 w-100">Счета оплачены</div>';
             return;
         }
         
         list.innerHTML = app.state.activeChecks.map(c => {
-            let msWaited = Date.now() - new Date(c.created_at).getTime();
-            let urgencyClass = msWaited > 1800000 ? 'urgency-red' : (msWaited > 600000 ? 'urgency-yellow' : '');
-            
             return `
-            <div class="payment-card ${urgencyClass}">
+            <div class="payment-card border-success">
                 <div class="flex-between mb-10">
-                    <b class="text-white">${c.guest_name}</b>
+                    <b class="text-white text-14">${c.guest_name}</b>
                     <span class="badge" style="background: rgba(255,255,255,0.05);">Ст. ${c.table_id}</span>
                 </div>
                 <div class="gold-text text-24 bold mb-15">${c.total.toLocaleString()} ₸</div>
@@ -124,6 +119,7 @@ const app = {
                     <div class="flex-row gap-10">
                         <button class="btn-secondary flex-1" onclick="app.ui.toast('Чек в WhatsApp', 'success')">🧾 ЧЕК</button>
                         <button class="btn-secondary flex-1" onclick="app.ui.toast('Разделение счета', 'warning')">👥 SPLIT</button>
+                        <button class="btn-secondary danger-text" style="width: 50px;" onclick="app.ui.toast('Переведено в долг', 'danger')">⚠</button>
                     </div>
                 </div>
             </div>`;
@@ -135,7 +131,6 @@ const app = {
         if (!id) return;
         app.ui.playSound('pay');
         await supabase.from('active_checks').delete().eq('id', id);
-        
         app.closeModals();
         app.ui.toast(`Оплата ${method} успешна`, 'success');
         app.logActivity(`Оплата ${method}`, '💳');
@@ -163,15 +158,18 @@ const app = {
         },
         formatTime: (ms) => { 
             let s = Math.floor(ms / 1000); 
-            return `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`; 
+            return `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; 
         }
     },
 
     tick: () => {
         if (!app.session.isAuth) return;
         let liveRevenue = 0;
+        let activeCount = 0;
+        
         app.state.tables.forEach(t => {
             if (t.status === 'В ИГРЕ') {
+                activeCount++;
                 let ms = (t.accumulated_time || 0);
                 if (!t.paused) ms += (Date.now() - t.started_at);
                 let cost = app.math.getCost(t);
@@ -179,20 +177,13 @@ const app = {
                 
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
-                if (timerEl) {
-                    timerEl.innerText = app.math.formatTime(ms);
-                    timerEl.className = 't-timer ' + (ms < 3600000 ? 'timer-green' : (ms < 10800000 ? 'timer-yellow' : 'timer-red'));
-                }
+                if (timerEl) timerEl.innerText = app.math.formatTime(ms);
                 if (sumEl) sumEl.innerText = cost.toLocaleString() + " ₸";
             }
         });
         
-        // Обновляем виртуальные финансы в шапке
-        if($('head-profit')) {
-            $('head-profit').innerText = (liveRevenue + 42500).toLocaleString() + " ₸";
-            $('head-cash').innerText = (liveRevenue + 12000).toLocaleString() + " ₸";
-            $('head-qr').innerText = (30500).toLocaleString() + " ₸";
-        }
+        if($('head-tables-rev')) $('head-tables-rev').innerText = liveRevenue.toLocaleString() + " ₸";
+        if($('head-active-tables')) $('head-active-tables').innerText = `${activeCount} / 6`;
     },
 
     setupNavigation: () => {
@@ -212,14 +203,14 @@ const app = {
 
     render: () => {
         if (!app.session.isAuth) {
-            $('authScreen').classList.add('active');
+            $('authScreen').classList.remove('hidden');
             $('appScreen').classList.add('hidden');
             app.auth.renderStaff(); 
         } else {
-            $('authScreen').classList.remove('active');
+            $('authScreen').classList.add('hidden'); // ЖЕСТКОЕ СКРЫТИЕ ВХОДА
             $('appScreen').classList.remove('hidden');
             $('userName').innerText = app.session.user.name;
-            app.state.shiftStart = Date.now(); // Сброс таймера при логине
+            if(!app.state.shiftStart) app.state.shiftStart = Date.now();
             $$('.owner-only').forEach(el => { el.style.display = app.session.user.role === 'owner' ? 'inline-block' : 'none'; });
             app.tables.render();
             app.renderChecks();
