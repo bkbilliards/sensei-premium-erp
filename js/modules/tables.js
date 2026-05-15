@@ -11,6 +11,7 @@ export function initTables(app, supabase) {
                 let isPlaying = t.status === 'В ИГРЕ';
                 let cls = isPlaying ? (t.paused ? 'paused' : 'playing') : 'free';
                 let cost = isPlaying ? app.math.getCost(t) : 0;
+                let statusText = isPlaying ? (t.paused ? 'Пауза' : 'В игре') : 'Свободен';
                 
                 let btnsFree = `
                     <button class="btn-gold" style="flex: 3;" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
@@ -59,6 +60,7 @@ export function initTables(app, supabase) {
                 current_players: 2, active_check_id: `Гость`
             }).eq('id', id);
             app.ui.toast(`Стол ${id} в игре`, 'success');
+            app.logActivity(`Запущен Стол ${id}`);
         },
 
         openManage: (id) => {
@@ -86,11 +88,13 @@ export function initTables(app, supabase) {
             if (t.paused) {
                 await supabase.from('tables').update({ paused: false, started_at: Date.now() }).eq('id', id);
                 app.ui.toast(`Игра продолжена`, 'success');
+                app.logActivity(`Продолжение: Стол ${id}`);
             } else {
                 let ms = (t.accumulated_time || 0) + (Date.now() - t.started_at);
                 let cost = app.math.getCost(t);
                 await supabase.from('tables').update({ paused: true, accumulated_time: ms, accumulated_cost: cost, started_at: null }).eq('id', id);
                 app.ui.toast(`Стол на паузе`, 'warning');
+                app.logActivity(`Пауза: Стол ${id}`);
             }
             app.ui.closeSidePanel('side-manage-table');
         },
@@ -122,6 +126,7 @@ export function initTables(app, supabase) {
 
             app.ui.closeSidePanel('side-stop-table');
             app.ui.toast(`Счет передан на кассу`, 'success');
+            app.logActivity(`Остановлен Стол ${id}`);
         }
     };
 }
