@@ -12,7 +12,7 @@ const app = {
     init: async () => {
         app.auth.checkSession();
         app.setupNavigation();
-        app.setupHotkeys(); // ГОРЯЧИЕ КЛАВИШИ
+        app.setupHotkeys();
         
         const { data: settings } = await supabase.from('settings').select('*').single();
         if(settings) app.state.tariffs = settings;
@@ -44,10 +44,7 @@ const app = {
 
     setupHotkeys: () => {
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                $$('.side-panel').forEach(p => p.classList.remove('active'));
-                $$('.overlay').forEach(p => p.classList.add('hidden'));
-            }
+            if (e.key === 'Escape') app.closeModals();
         });
     },
 
@@ -62,17 +59,20 @@ const app = {
         },
         openSidePanel: (id) => { $(id).classList.add('active'); },
         closeSidePanel: (id) => { $(id).classList.remove('active'); },
-        
-        // ЗВУКИ (Синтезатор прямо в браузере, без файлов!)
         playSound: (type) => {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator(); const gain = ctx.createGain();
                 osc.connect(gain); gain.connect(ctx.destination);
-                if(type === 'start') { osc.frequency.setValueAtTime(600, ctx.currentTime); osc.type = 'sine'; gain.gain.setValueAtTime(0.1, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1); osc.start(); osc.stop(ctx.currentTime + 0.1); }
+                if(type === 'start') { osc.frequency.setValueAtTime(600, ctx.currentTime); osc.type = 'sine'; gain.gain.setValueAtTime(0.05, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1); osc.start(); osc.stop(ctx.currentTime + 0.1); }
                 if(type === 'pay') { osc.frequency.setValueAtTime(800, ctx.currentTime); osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.1); osc.type = 'square'; gain.gain.setValueAtTime(0.05, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2); osc.start(); osc.stop(ctx.currentTime + 0.2); }
             } catch(e){}
         }
+    },
+
+    closeModals: () => {
+        $$('.side-panel').forEach(p => p.classList.remove('active'));
+        $$('.overlay').forEach(p => p.classList.add('hidden'));
     },
 
     logActivity: (text, icon) => {
@@ -82,10 +82,10 @@ const app = {
         item.className = `feed-item`;
         item.innerHTML = `<span class="feed-time">${time}</span> <span class="feed-icon">${icon}</span> <span class="text-white">${text}</span>`;
         feed.prepend(item);
-        if(feed.children.length > 15) feed.lastChild.remove();
+        if(feed.children.length > 20) feed.lastChild.remove();
     },
 
-    // РЕНДЕР КАРТОЧЕК ОПЛАТЫ (GRID)
+    // РЕНДЕР ЧЕКОВ (С КНОПКАМИ "ЧЕК" и "В ДОЛГ")
     renderChecks: () => {
         const list = $('waiting-payments-list');
         const count = $('waiting-count');
@@ -97,7 +97,6 @@ const app = {
         }
         
         list.innerHTML = app.state.activeChecks.map(c => {
-            // Индикатор срочности (Зеленый -> Желтый -> Красный)
             let msWaited = Date.now() - new Date(c.created_at).getTime();
             let urgencyClass = msWaited > 1800000 ? 'urgency-red' : (msWaited > 600000 ? 'urgency-yellow' : '');
             
@@ -108,25 +107,35 @@ const app = {
                     <span class="badge" style="background: rgba(255,255,255,0.05);">Ст. ${c.table_id}</span>
                 </div>
                 <div class="gold-text text-24 bold mb-20">${c.total.toLocaleString()} ₸</div>
-                <div class="flex-row">
-                    <button class="btn-gold flex-1 shadow-gold" onclick="app.openPayModal(${c.id}, ${c.total})">💳 ОПЛАТИТЬ</button>
-                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Печать...', 'success')">🧾</button>
-                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Меню', 'warning')">⋮</button>
+                <div class="flex-column gap-10">
+                    <button class="btn-gold shadow-gold w-100" onclick="app.openPayModal(${c.id}, ${c.total})">💳 ОПЛАТИТЬ</button>
+                    <div class="flex-row gap-10">
+                        <button class="btn-dark flex-1" onclick="app.openReceipt(${c.id})">🧾 ЧЕК</button>
+                        <button class="btn-dark flex-1 danger-text" onclick="app.ui.toast('Переведено в долг', 'danger')">💸 В ДОЛГ</button>
+                    </div>
                 </div>
             </div>`;
         }).join('');
     },
 
-    // БЫСТРАЯ ОПЛАТА (MINI MODAL)
+    openReceipt: (id) => {
+        let c = app.state.activeChecks.find(x => x.id === id);
+        if(!c) return;
+        $('rec-table').innerText = c.table_id;
+        $('rec-guest').innerText = c.guest_name;
+        $('rec-time').innerText = app.math.formatTime(c.played_ms || 0);
+        $('rec-time-sum').innerText = c.time_amount.toLocaleString() + ' ₸';
+        $('rec-total').innerText = c.total.toLocaleString() + ' ₸';
+        $('modal-receipt').classList.remove('hidden');
+    },
+
     openPayModal: (id, total) => {
         $('pay-check-id').value = id;
         $('pay-sum').innerText = total.toLocaleString() + ' ₸';
-        // Сброс кнопок выбора
         $$('.pay-method-btn').forEach(b => b.classList.remove('active'));
         $('pay-method').value = '';
         $('modal-pay').classList.remove('hidden');
     },
-    closePayModal: () => { $('modal-pay').classList.add('hidden'); },
     setPayMethod: (method, btnEl) => {
         $$('.pay-method-btn').forEach(b => b.classList.remove('active'));
         btnEl.classList.add('active');
@@ -140,9 +149,8 @@ const app = {
         app.ui.playSound('pay');
         await supabase.from('active_checks').delete().eq('id', id);
         
-        // В будущем здесь будет запись в Архив. Пока просто удаляем.
-        app.closePayModal();
-        app.ui.toast(`Счет оплачен (${method})`, 'success');
+        app.closeModals();
+        app.ui.toast(`Оплата успешна (${method})`, 'success');
         app.logActivity(`Оплата ${method}`, '💳');
     },
 
@@ -172,6 +180,7 @@ const app = {
         }
     },
 
+    // ЛОГИКА ЦВЕТА ТАЙМЕРА (URGENCY)
     tick: () => {
         if (!app.session.isAuth) return;
         let liveRevenue = 0;
@@ -179,11 +188,18 @@ const app = {
             if (t.status === 'В ИГРЕ') {
                 let ms = (t.accumulated_time || 0);
                 if (!t.paused) ms += (Date.now() - t.started_at);
+                
                 let cost = app.math.getCost(t);
                 liveRevenue += cost;
+                
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
-                if (timerEl) timerEl.innerText = app.math.formatTime(ms);
+                
+                if (timerEl) {
+                    timerEl.innerText = app.math.formatTime(ms);
+                    // Цвет таймера (До 1ч: зеленый, 1ч-3ч: желтый, 3ч+: красный)
+                    timerEl.className = 't-timer ' + (ms < 3600000 ? 'timer-green' : (ms < 10800000 ? 'timer-yellow' : 'timer-red'));
+                }
                 if (sumEl) sumEl.innerText = cost.toLocaleString() + " ₸";
             }
         });
