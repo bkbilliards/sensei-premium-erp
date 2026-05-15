@@ -1,6 +1,6 @@
 import { supabase, session, loadSession, saveSession } from './supabase.js';
 import { initAuth } from './modules/auth.js';
-import { initTables } from './modules/tables.js'; // Подключаем столы
+import { initTables } from './modules/tables.js';
 
 const $ = i => document.getElementById(i);
 const $$ = s => document.querySelectorAll(s);
@@ -10,7 +10,6 @@ const app = {
     loadSession: loadSession,
     saveSession: saveSession,
     
-    // Хранилище данных, которые загружаются из базы
     state: { 
         tables: [], 
         tariffs: { day_start: 10, day_end: 18, day_price: 2000, night_price: 3000 } 
@@ -20,33 +19,57 @@ const app = {
         app.auth.checkSession();
         app.setupNavigation();
         
-        // 1. Загружаем настройки тарифов
+        // Грузим тарифы
         const { data: settings } = await supabase.from('settings').select('*').single();
         if(settings) app.state.tariffs = settings;
 
-        // 2. Загружаем столы
+        // Грузим столы
         const { data: tables } = await supabase.from('tables').select('*').order('id');
         if(tables) {
             app.state.tables = tables;
-            app.render(); // Перерисовываем экран
+            app.render();
         }
 
-        // 3. МАГИЯ: Подписываемся на живые изменения в столах
+        // ЖИВАЯ СИНХРОНИЗАЦИЯ СТОЛОВ
         supabase.channel('public:tables').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tables' }, payload => {
             const index = app.state.tables.findIndex(t => t.id === payload.new.id);
             if(index !== -1) app.state.tables[index] = payload.new;
-            app.tables.render(); // Стол перерисуется сам у всех админов
+            app.tables.render(); 
         }).subscribe();
 
-        // 4. Запускаем живые часы и таймеры
+        // Часы и Таймеры
         setInterval(() => {
             let clock = $('live-clock');
             if (clock) clock.innerText = new Date().toLocaleTimeString('ru-RU');
-            app.tick(); 
+            app.tick();
         }, 1000);
     },
 
-    // Блок математики и расчета стоимости
+    // UX Инструменты (Тосты и Боковые панели)
+    ui: {
+        toast: (msg, type='success') => {
+            const c = $('toast-container');
+            if(!c) return;
+            const t = document.createElement('div');
+            t.className = `toast toast-${type}`;
+            t.innerHTML = msg;
+            c.appendChild(t);
+            setTimeout(() => t.remove(), 4000);
+        },
+        openSidePanel: (id) => { $(id).classList.add('active'); },
+        closeSidePanel: (id) => { $(id).classList.remove('active'); }
+    },
+
+    logActivity: (text) => {
+        const feed = $('activity-feed');
+        if(!feed) return;
+        const time = new Date().toLocaleTimeString('ru-RU').slice(0,5);
+        const item = document.createElement('div');
+        item.className = 'feed-item';
+        item.innerHTML = `<span class="gold-text mr-10">${time}</span> ${text}`;
+        feed.prepend(item);
+    },
+
     math: {
         getCost: (t) => {
             if (!t.started_at) return t.accumulated_cost || 0;
@@ -67,7 +90,7 @@ const app = {
                     cMs += 60000; 
                 }
             }
-            return Math.ceil(cost / 50) * 50; // Округление до 50 тенге
+            return Math.ceil(cost / 50) * 50; 
         },
         formatTime: (ms) => { 
             let s = Math.floor(ms / 1000); 
@@ -75,19 +98,15 @@ const app = {
         }
     },
 
-    // Функция, которая каждую секунду двигает таймеры
     tick: () => {
         if (!app.session.isAuth) return;
         app.state.tables.forEach(t => {
             if (t.status === 'В ИГРЕ' && !t.paused) {
                 let ms = (t.accumulated_time || 0) + (Date.now() - t.started_at);
                 let cost = app.math.getCost(t);
-                let timeStr = app.math.formatTime(ms);
-                
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
-                
-                if (timerEl) timerEl.innerText = timeStr;
+                if (timerEl) timerEl.innerText = app.math.formatTime(ms);
                 if (sumEl) sumEl.innerText = cost + " ₸";
             }
         });
@@ -98,16 +117,13 @@ const app = {
             btn.addEventListener('click', (e) => {
                 const tabId = e.currentTarget.dataset.tab;
                 if (!tabId) return;
-                
                 $$('.nav-btn, .mobile-nav-item').forEach(b => b.classList.remove('active'));
                 $$(`[data-tab="${tabId}"]`).forEach(b => b.classList.add('active'));
-                
                 $$('.tab-pane').forEach(p => p.classList.add('hidden'));
                 let tab = $(`tab-${tabId}`);
                 if (tab) tab.classList.remove('hidden');
             });
         });
-        
         let btnLogout = $('btn-logout');
         if (btnLogout) btnLogout.addEventListener('click', () => app.auth.logout());
     },
@@ -121,18 +137,13 @@ const app = {
             $('authScreen').classList.remove('active');
             $('appScreen').classList.remove('hidden');
             $('userName').innerText = app.session.user.name;
-            
-            $$('.owner-only').forEach(el => {
-                el.style.display = app.session.user.role === 'owner' ? 'inline-block' : 'none';
-            });
-
-            // Рисуем столы
+            $$('.owner-only').forEach(el => { el.style.display = app.session.user.role === 'owner' ? 'inline-block' : 'none'; });
             app.tables.render();
         }
     }
 };
 
 app.auth = initAuth(app, supabase);
-app.tables = initTables(app, supabase); // Подключаем столы к мозгу
+app.tables = initTables(app, supabase);
 window.app = app;
 window.onload = app.init;
