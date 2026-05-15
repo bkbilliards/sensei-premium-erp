@@ -99,13 +99,16 @@ const app = {
         if (!list || !count) return;
         count.innerText = app.state.activeChecks.length;
         if (app.state.activeChecks.length === 0) {
-            list.innerHTML = '<div class="muted-text text-center py-10 w-100">Счета оплачены</div>';
+            list.innerHTML = '<div class="muted-text text-center py-10 w-100">Все счета оплачены</div>';
             return;
         }
         
         list.innerHTML = app.state.activeChecks.map(c => {
+            let msWaited = Date.now() - new Date(c.created_at).getTime();
+            let urgencyClass = msWaited > 1800000 ? 'urgency-red' : (msWaited > 600000 ? 'urgency-yellow' : '');
+            
             return `
-            <div class="payment-card border-success">
+            <div class="payment-card ${urgencyClass}">
                 <div class="flex-between mb-10">
                     <b class="text-white text-14">${c.guest_name}</b>
                     <span class="badge" style="background: rgba(255,255,255,0.05);">Ст. ${c.table_id}</span>
@@ -113,17 +116,28 @@ const app = {
                 <div class="gold-text text-24 bold mb-15">${c.total.toLocaleString()} ₸</div>
                 <div class="flex-column gap-10">
                     <div class="flex-row gap-10">
-                        <button class="btn-dark flex-1" onclick="app.confirmPay('НАЛ', ${c.id})">💵 НАЛ</button>
-                        <button class="btn-dark flex-1 blue-text" style="border-color:rgba(10,132,255,0.3);" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
+                        <button class="btn-gold flex-1" onclick="app.confirmPay('НАЛ', ${c.id})">💵 НАЛ</button>
+                        <button class="btn-dark flex-1" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
                     </div>
                     <div class="flex-row gap-10">
-                        <button class="btn-secondary flex-1" onclick="app.ui.toast('Чек в WhatsApp', 'success')">🧾 ЧЕК</button>
-                        <button class="btn-secondary flex-1" onclick="app.ui.toast('Разделение счета', 'warning')">👥 SPLIT</button>
-                        <button class="btn-secondary danger-text" style="width: 50px;" onclick="app.ui.toast('Переведено в долг', 'danger')">⚠</button>
+                        <button class="btn-dark flex-1" onclick="app.openReceipt(${c.id})">🧾 ЧЕК</button>
+                        <button class="btn-dark flex-1" onclick="app.ui.toast('Разделение счета', 'warning')">👥 РАЗДЕЛИТЬ</button>
+                        <button class="btn-danger" style="width: 50px;" onclick="app.ui.toast('Проблема зафиксирована', 'danger')">⚠</button>
                     </div>
                 </div>
             </div>`;
         }).join('');
+    },
+
+    openReceipt: (id) => {
+        let c = app.state.activeChecks.find(x => x.id === id);
+        if(!c) return;
+        $('rec-table').innerText = c.table_id;
+        $('rec-guest').innerText = c.guest_name;
+        $('rec-time').innerText = app.math.formatTime(c.played_ms || 0);
+        $('rec-time-sum').innerText = c.time_amount.toLocaleString() + ' ₸';
+        $('rec-total').innerText = c.total.toLocaleString() + ' ₸';
+        $('modal-receipt').classList.remove('hidden');
     },
 
     confirmPay: async (method, overrideId = null) => {
@@ -158,7 +172,10 @@ const app = {
         },
         formatTime: (ms) => { 
             let s = Math.floor(ms / 1000); 
-            return `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; 
+            let h = Math.floor(s / 3600);
+            let m = Math.floor((s % 3600) / 60);
+            let sec = s % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`; 
         }
     },
 
@@ -177,7 +194,9 @@ const app = {
                 
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
-                if (timerEl) timerEl.innerText = app.math.formatTime(ms);
+                if (timerEl) {
+                    timerEl.innerText = app.math.formatTime(ms);
+                }
                 if (sumEl) sumEl.innerText = cost.toLocaleString() + " ₸";
             }
         });
@@ -207,7 +226,7 @@ const app = {
             $('appScreen').classList.add('hidden');
             app.auth.renderStaff(); 
         } else {
-            $('authScreen').classList.add('hidden'); // ЖЕСТКОЕ СКРЫТИЕ ВХОДА
+            $('authScreen').classList.add('hidden'); 
             $('appScreen').classList.remove('hidden');
             $('userName').innerText = app.session.user.name;
             if(!app.state.shiftStart) app.state.shiftStart = Date.now();
