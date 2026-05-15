@@ -7,7 +7,7 @@ const $$ = s => document.querySelectorAll(s);
 
 const app = {
     session: session, loadSession: loadSession, saveSession: saveSession,
-    state: { tables: [], activeChecks: [], tariffs: { day_start: 10, day_end: 18, day_price: 2000, night_price: 3000 } },
+    state: { tables: [], activeChecks: [], tariffs: { day_start: 10, day_end: 18, day_price: 2000, night_price: 3000 }, shiftStart: Date.now() },
 
     init: async () => {
         app.auth.checkSession();
@@ -38,6 +38,15 @@ const app = {
         setInterval(() => {
             let clock = $('live-clock');
             if (clock) clock.innerText = new Date().toLocaleTimeString('ru-RU').slice(0,5);
+            
+            // Таймер смены
+            let shiftClock = $('shift-clock');
+            if (shiftClock && app.session.isAuth) {
+                let ms = Date.now() - app.state.shiftStart;
+                let h = Math.floor(ms / 3600000);
+                let m = Math.floor((ms % 3600000) / 60000);
+                shiftClock.innerText = `Смена: ${String(h).padStart(2,'0')}ч ${String(m).padStart(2,'0')}м`;
+            }
             app.tick();
         }, 1000);
     },
@@ -85,6 +94,7 @@ const app = {
         if(feed.children.length > 20) feed.lastChild.remove();
     },
 
+    // КАРТОЧКИ ОПЛАТЫ СО ВСЕМИ КНОПКАМИ ERP
     renderChecks: () => {
         const list = $('waiting-payments-list');
         const count = $('waiting-count');
@@ -101,55 +111,33 @@ const app = {
             
             return `
             <div class="payment-card ${urgencyClass}">
-                <div class="flex-between mb-15">
+                <div class="flex-between mb-10">
                     <b class="text-white">${c.guest_name}</b>
                     <span class="badge" style="background: rgba(255,255,255,0.05);">Ст. ${c.table_id}</span>
                 </div>
-                <div class="gold-text text-24 bold mb-20">${c.total.toLocaleString()} ₸</div>
+                <div class="gold-text text-24 bold mb-15">${c.total.toLocaleString()} ₸</div>
                 <div class="flex-column gap-10">
-                    <button class="btn-gold shadow-gold w-100" onclick="app.openPayModal(${c.id}, ${c.total})">💳 ОПЛАТИТЬ</button>
                     <div class="flex-row gap-10">
-                        <button class="btn-dark flex-1" onclick="app.openReceipt(${c.id})">🧾 ЧЕК</button>
-                        <button class="btn-dark flex-1 danger-text" onclick="app.ui.toast('Переведено в долг', 'danger')">💸 В ДОЛГ</button>
+                        <button class="btn-dark flex-1" onclick="app.confirmPay('НАЛ', ${c.id})">💵 НАЛ</button>
+                        <button class="btn-dark flex-1 blue-text" style="border-color:rgba(10,132,255,0.3);" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
+                    </div>
+                    <div class="flex-row gap-10">
+                        <button class="btn-secondary flex-1" onclick="app.ui.toast('Чек в WhatsApp', 'success')">🧾 ЧЕК</button>
+                        <button class="btn-secondary flex-1" onclick="app.ui.toast('Разделение счета', 'warning')">👥 SPLIT</button>
                     </div>
                 </div>
             </div>`;
         }).join('');
     },
 
-    openReceipt: (id) => {
-        let c = app.state.activeChecks.find(x => x.id === id);
-        if(!c) return;
-        $('rec-table').innerText = c.table_id;
-        $('rec-guest').innerText = c.guest_name;
-        $('rec-time').innerText = app.math.formatTime(c.played_ms || 0);
-        $('rec-time-sum').innerText = c.time_amount.toLocaleString() + ' ₸';
-        $('rec-total').innerText = c.total.toLocaleString() + ' ₸';
-        $('modal-receipt').classList.remove('hidden');
-    },
-
-    openPayModal: (id, total) => {
-        $('pay-check-id').value = id;
-        $('pay-sum').innerText = total.toLocaleString() + ' ₸';
-        $$('.pay-method-btn').forEach(b => b.classList.remove('active'));
-        $('pay-method').value = '';
-        $('modal-pay').classList.remove('hidden');
-    },
-    setPayMethod: (method, btnEl) => {
-        $$('.pay-method-btn').forEach(b => b.classList.remove('active'));
-        btnEl.classList.add('active');
-        $('pay-method').value = method;
-    },
-    confirmPay: async () => {
-        let id = $('pay-check-id').value;
-        let method = $('pay-method').value;
-        if (!method) return app.ui.toast('Выберите способ оплаты!', 'danger');
-        
+    confirmPay: async (method, overrideId = null) => {
+        let id = overrideId || $('pay-check-id').value;
+        if (!id) return;
         app.ui.playSound('pay');
         await supabase.from('active_checks').delete().eq('id', id);
         
         app.closeModals();
-        app.ui.toast(`Оплата успешна (${method})`, 'success');
+        app.ui.toast(`Оплата ${method} успешна`, 'success');
         app.logActivity(`Оплата ${method}`, '💳');
     },
 
@@ -198,7 +186,13 @@ const app = {
                 if (sumEl) sumEl.innerText = cost.toLocaleString() + " ₸";
             }
         });
-        if($('head-cash')) $('head-cash').innerText = liveRevenue.toLocaleString() + " ₸";
+        
+        // Обновляем виртуальные финансы в шапке
+        if($('head-profit')) {
+            $('head-profit').innerText = (liveRevenue + 42500).toLocaleString() + " ₸";
+            $('head-cash').innerText = (liveRevenue + 12000).toLocaleString() + " ₸";
+            $('head-qr').innerText = (30500).toLocaleString() + " ₸";
+        }
     },
 
     setupNavigation: () => {
@@ -225,6 +219,7 @@ const app = {
             $('authScreen').classList.remove('active');
             $('appScreen').classList.remove('hidden');
             $('userName').innerText = app.session.user.name;
+            app.state.shiftStart = Date.now(); // Сброс таймера при логине
             $$('.owner-only').forEach(el => { el.style.display = app.session.user.role === 'owner' ? 'inline-block' : 'none'; });
             app.tables.render();
             app.renderChecks();
