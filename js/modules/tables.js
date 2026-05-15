@@ -19,8 +19,9 @@ export function initTables(app, supabase) {
                 
                 let btnsActive = `
                     <button class="btn-danger shadow-red flex-1" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
-                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Бар', 'warning')">🍹</button>
-                    <button class="btn-dark" style="width: 45px;" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶' : '⏸'}</button>`;
+                    <button class="btn-dark" style="width: 45px;" onclick="app.tables.openFastBar(${t.id})">🍹</button>
+                    <button class="btn-dark" style="width: 45px;" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶' : '⏸'}</button>
+                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Пересадка', 'warning')">🔀</button>`;
 
                 return `
                 <div class="table-card ${cls}">
@@ -34,9 +35,9 @@ export function initTables(app, supabase) {
                             <span class="t-cost" id="sum-${t.id}">${isPlaying ? cost + ' ₸' : (t.accumulated_cost ? t.accumulated_cost + ' ₸' : 'Свободен')}</span>
                         </div>
                         ${isPlaying ? `
-                        <div class="flex-column text-right">
-                            <span class="muted-text">👤 ${t.current_players || 2} игр</span>
-                            <span class="muted-text">🍹 0 ₸</span>
+                        <div class="flex-column text-right gap-5">
+                            <span class="badge" style="background:rgba(255,255,255,0.05); color:#828282;">👥 ${t.current_players || 2}</span>
+                            <span class="badge badge-yellow">🍹 0 ₸</span>
                         </div>` : ''}
                     </div>
                     
@@ -54,7 +55,7 @@ export function initTables(app, supabase) {
                 current_players: 2, active_check_id: `Гость`
             }).eq('id', id);
             app.ui.toast(`Стол ${id} запущен!`, 'success');
-            app.logActivity(`Стол ${id}`, '▶');
+            app.logActivity(`Старт: Стол ${id}`, '▶');
         },
 
         openStopPanel: (id) => {
@@ -71,9 +72,11 @@ export function initTables(app, supabase) {
             let name = $('stop-guest-name').value.trim() || `Гость ${id}`;
             let t = app.state.tables.find(x => x.id === id);
             let cost = app.math.getCost(t);
+            let playedMs = (t.accumulated_time || 0) + (Date.now() - t.started_at);
 
             await supabase.from('active_checks').insert([{
-                id: Date.now(), table_id: id.toString(), guest_name: name, time_amount: cost, total: cost, created_by: app.session.user.name, created_at: new Date().toISOString()
+                id: Date.now(), table_id: id.toString(), guest_name: name, time_amount: cost, total: cost, created_by: app.session.user.name, 
+                created_at: new Date().toISOString(), played_ms: playedMs // Сохраняем время для чека
             }]);
 
             await supabase.from('tables').update({ 
@@ -81,21 +84,32 @@ export function initTables(app, supabase) {
             }).eq('id', id);
 
             app.ui.closeSidePanel('side-stop-table');
-            app.ui.toast(`Чек передан на кассу!`, 'success');
-            app.logActivity(`Стоп Стол ${id}`, '⏹');
+            app.ui.toast(`Счет передан на кассу!`, 'success');
+            app.logActivity(`Стоп: Стол ${id} (${cost} ₸)`, '⏹');
         },
 
         togglePause: async (id) => {
             let t = app.state.tables.find(x => x.id === id);
             if (t.paused) {
                 await supabase.from('tables').update({ paused: false, started_at: Date.now() }).eq('id', id);
-                app.logActivity(`Игра Стол ${id}`, '▶');
+                app.logActivity(`Игра: Стол ${id}`, '▶');
             } else {
                 let ms = (t.accumulated_time || 0) + (Date.now() - t.started_at);
                 let cost = app.math.getCost(t);
                 await supabase.from('tables').update({ paused: true, accumulated_time: ms, accumulated_cost: cost, started_at: null }).eq('id', id);
-                app.logActivity(`Пауза Стол ${id}`, '⏸');
+                app.logActivity(`Пауза: Стол ${id}`, '⏸');
             }
+        },
+
+        // БЫСТРЫЙ БАР
+        openFastBar: (id) => {
+            $('bar-table-id').innerText = id;
+            app.ui.openSidePanel('side-fast-bar');
+        },
+        addBarItem: (el) => {
+            app.ui.playSound('start');
+            app.ui.toast(`Добавлено: ${el.innerText.split(' ')[1]}`, 'success');
+            app.logActivity(`${el.innerText.split(' ')[1]} на Стол ${$('bar-table-id').innerText}`, '🍹');
         }
     };
 }
