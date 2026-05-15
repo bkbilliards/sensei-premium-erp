@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SENSEI ERP X | Ultra Matte</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=15.0">
+    <link rel="stylesheet" href="css/style.css?v=16.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -63,7 +63,7 @@
                     <button class="nav-btn owner-only success-text" data-tab="acc">📈 ФИНАНСЫ</button>
                     <button class="nav-btn owner-only gold-text" data-tab="owner">👑 ХОЗЯИН</button>
                 </div>
-                <button class="btn-dark btn-sm danger-text" id="btn-logout">⏹ ЗАКРЫТЬ СМЕНУ</button>
+                <button class="btn-dark btn-sm danger-text" id="btn-logout" style="border-color: rgba(255,69,58,0.3);">⏹ ЗАКРЫТЬ СМЕНУ</button>
             </div>
         </nav>
 
@@ -84,19 +84,27 @@
                 
                 <div class="right-control-panel hide-mobile">
                     <div class="control-section mb-20">
-                        <div class="muted-text mb-10">БЫСТРЫЕ ДЕЙСТВИЯ</div>
+                        <div class="muted-text mb-10">ОСНОВНЫЕ</div>
                         <div class="control-actions-grid">
                             <button class="action-btn" onclick="app.ui.toast('Вызов бара', 'success')"><span class="icon text-white">🍹</span>БАР</button>
+                            <button class="action-btn" onclick="app.ui.toast('Окно оплат', 'success')"><span class="icon gold-text">💳</span>ОПЛАТА</button>
                             <button class="action-btn" onclick="app.ui.toast('Бронь стола', 'warning')"><span class="icon blue-text">📅</span>БРОНЬ</button>
+                        </div>
+                    </div>
+
+                    <div class="control-section mb-20">
+                        <div class="muted-text mb-10">ВТОРИЧНЫЕ</div>
+                        <div class="control-actions-grid">
                             <button class="action-btn" onclick="app.ui.toast('Внести расход', 'warning')"><span class="icon text-white">🧾</span>РАСХОД</button>
-                            <button class="action-btn" onclick="app.ui.toast('Оформление долга', 'danger')"><span class="icon danger-text">💳</span>ДОЛГ</button>
+                            <button class="action-btn" onclick="app.ui.toast('Оформление долга', 'danger')"><span class="icon danger-text">💸</span>ДОЛГ</button>
+                            <button class="action-btn" onclick="app.ui.toast('База клиентов', 'warning')"><span class="icon text-white">👤</span>ГОСТЬ</button>
                         </div>
                     </div>
 
                     <div class="control-section mb-20 mt-auto">
                         <div class="muted-text mb-10 text-right">ЭКСТРЕННЫЕ</div>
                         <div class="flex-row gap-10">
-                            <button class="action-btn flex-1 danger-border" onclick="app.ui.toast('Инцидент зафиксирован!', 'danger')"><span class="icon danger-text">🚨</span>ПРОБЛЕМА</button>
+                            <button class="action-btn flex-1 danger-border" onclick="app.ui.toast('Инцидент зафиксирован!', 'danger')"><span class="icon danger-text">🚨</span>ИНЦИДЕНТ</button>
                             <button class="action-btn flex-1 gold-border" onclick="app.ui.toast('Вызов хозяина отправлен!', 'success')"><span class="icon gold-text">👑</span>ПОМОЩЬ</button>
                         </div>
                     </div>
@@ -109,11 +117,6 @@
             <div id="tab-acc" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ФИНАНСЫ СКОРО</h2></div>
             <div id="tab-owner" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ПАНЕЛЬ ХОЗЯИНА СКОРО</h2></div>
         </main>
-
-        <div class="floating-events-panel hide-mobile">
-            <div class="muted-text mb-5 text-10">📡 СОБЫТИЯ СМЕНЫ</div>
-            <div id="activity-feed" class="activity-feed-list"></div>
-        </div>
 
         <div class="mobile-bottom-nav no-print">
             <button class="m-nav-item active" data-tab="hall">🎱<span>ЗАЛ</span></button>
@@ -150,22 +153,22 @@
 
         <div class="muted-text mb-10 text-10">ДЕЙСТВИЯ</div>
         <div class="flex-column gap-10" id="manage-actions-active">
-            <button class="btn-dark py-15" onclick="app.ui.toast('Гость сел (Ожидание)', 'warning')">👤 ГОСТЬ СЕЛ</button>
+            <button class="btn-dark py-15" onclick="app.ui.toast('Гость сел', 'warning')">👤 ГОСТЬ СЕЛ</button>
             <div class="flex-row gap-10">
-                <button class="btn-dark flex-1" onclick="app.ui.toast('Быстрый бар', 'success')">🍹 БАР</button>
+                <button class="btn-dark flex-1" onclick="app.ui.toast('Бар', 'success')">🍹 БАР</button>
                 <button class="btn-dark flex-1" onclick="app.tables.togglePauseFromManage()">⏸ ПАУЗА</button>
             </div>
             <div class="flex-row gap-10">
-                <button class="btn-dark flex-1" onclick="app.ui.toast('Разделить счет', 'warning')">👥 РАЗДЕЛИТЬ</button>
+                <button class="btn-dark flex-1" onclick="app.ui.toast('Разделить', 'warning')">👥 РАЗДЕЛИТЬ</button>
                 <button class="btn-dark flex-1" onclick="app.ui.toast('Пересадить', 'warning')">🔄 ПЕРЕСАДИТЬ</button>
             </div>
-            <button class="btn-dark py-15" onclick="app.ui.toast('Вызов предчека', 'success')">🧾 ПРЕДЧЕК</button>
+            <button class="btn-dark py-15" onclick="app.ui.toast('История стола', 'success')">📜 ИСТОРИЯ СТОЛА</button>
         </div>
 
         <div class="flex-column gap-10 hidden" id="manage-actions-free">
             <button class="btn-dark py-15" onclick="app.ui.toast('Бронь установлена', 'success')">📅 ДОБАВИТЬ БРОНЬ</button>
             <button class="btn-dark py-15 blue-text" style="border-color:rgba(10,132,255,0.3);" onclick="app.ui.toast('Уборка начата', 'warning')">🧹 УБОРКА СТОЛА</button>
-            <button class="btn-dark py-15 danger-text" style="border-color:rgba(255,69,58,0.3);" onclick="app.ui.toast('Стол закрыт на ремонт', 'danger')">🛠 ТЕХНИЧЕСКИЙ РЕЖИМ</button>
+            <button class="btn-dark py-15 danger-text" style="border-color:rgba(255,69,58,0.3);" onclick="app.ui.toast('Стол закрыт', 'danger')">🛠 ТЕХНИЧЕСКИЙ РЕЖИМ</button>
         </div>
 
         <button class="btn-secondary w-100 mt-auto" onclick="app.ui.closeSidePanel('side-manage-table')">ЗАКРЫТЬ</button>
@@ -177,7 +180,7 @@
             <div class="modal-close" onclick="app.ui.closeSidePanel('side-stop-table')">✕</div>
         </div>
         <div class="glass-card mb-30 text-center">
-            <div class="muted-text text-11 mb-10 uppercase letter-spacing">ИТОГО К ОПЛАТЕ:</div>
+            <div class="muted-text text-11 mb-10 uppercase letter-spacing">ВРЕМЯ ИГРЫ: <span id="stop-time-played" class="text-white"></span></div>
             <div class="huge-text gold-text" id="stop-total-sum">0 ₸</div>
         </div>
         <div class="input-group">
@@ -187,6 +190,6 @@
         <button onclick="app.tables.confirmStop()" class="btn-danger big-btn mt-auto mb-20">ВЫСТАВИТЬ СЧЕТ</button>
     </div>
 
-    <script type="module" src="js/app.js?v=15.0"></script>
+    <script type="module" src="js/app.js?v=16.0"></script>
 </body>
 </html>
