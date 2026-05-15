@@ -83,7 +83,17 @@ const app = {
         $$('.overlay').forEach(p => p.classList.add('hidden'));
     },
 
-    // ГОРИЗОНТАЛЬНЫЕ СТРОКИ ОПЛАТЫ (МАТОВЫЕ)
+    logActivity: (text, icon) => {
+        const feed = $('activity-feed'); if(!feed) return;
+        const time = new Date().toLocaleTimeString('ru-RU').slice(0,5);
+        const item = document.createElement('div');
+        item.className = `feed-item`;
+        item.innerHTML = `<span class="feed-time">${time}</span> <span class="feed-icon">${icon}</span> <span class="text-white">${text}</span>`;
+        feed.prepend(item);
+        if(feed.children.length > 20) feed.lastChild.remove();
+    },
+
+    // ГОРИЗОНТАЛЬНЫЕ СТРОКИ ОПЛАТЫ
     renderChecks: () => {
         const list = $('waiting-payments-list');
         const count = $('waiting-count');
@@ -117,7 +127,6 @@ const app = {
 
     openReceipt: (id) => {
         let c = app.state.activeChecks.find(x => x.id === id);
-        // Если вызвали прямо со стола (предчек)
         if(!c) {
             let t = app.state.tables.find(x => x.id === id);
             if(!t || t.status !== 'В ИГРЕ') return;
@@ -134,10 +143,29 @@ const app = {
     confirmPay: async (method, overrideId = null) => {
         let id = overrideId || $('pay-check-id').value;
         if (!id) return;
+        
+        let checkToArchive = app.state.activeChecks.find(c => c.id == id);
+        if (!checkToArchive) return;
+
         app.ui.playSound('pay');
+
+        // 1. АРХИВИРУЕМ ЧЕК В СЕЙФ
+        await supabase.from('archived_checks').insert([{
+            id: checkToArchive.id,
+            table_id: checkToArchive.table_id,
+            guest_name: checkToArchive.guest_name,
+            time_amount: checkToArchive.time_amount,
+            total: checkToArchive.total,
+            pay_method: method, // НАЛ или QR
+            created_by: checkToArchive.created_by
+        }]);
+
+        // 2. УДАЛЯЕМ ИЗ ОЖИДАНИЯ
         await supabase.from('active_checks').delete().eq('id', id);
+        
         app.closeModals();
         app.ui.toast(`Оплата ${method} успешна`, 'success');
+        app.logActivity(`Оплата ${method}: ${checkToArchive.total} ₸`, '💳');
     },
 
     math: {
@@ -190,6 +218,7 @@ const app = {
                 let sumEl = $(`sum-${t.id}`);
                 if (timerEl) {
                     timerEl.innerText = app.math.formatTime(ms);
+                    timerEl.className = 't-timer ' + (ms < 3600000 ? 'timer-green' : (ms < 10800000 ? 'timer-yellow' : 'timer-red'));
                 }
                 if (sumEl) sumEl.innerText = cost.toLocaleString() + " ₸";
             }
@@ -197,7 +226,7 @@ const app = {
         
         if($('head-tables-rev')) $('head-tables-rev').innerText = liveRevenue.toLocaleString() + " ₸";
         if($('head-active-tables')) $('head-active-tables').innerText = `${activeCount} / 6`;
-        if($('head-total')) $('head-total').innerText = (liveRevenue + 45000).toLocaleString() + " ₸";
+        if($('head-total')) $('head-total').innerText = (liveRevenue).toLocaleString() + " ₸";
         if($('head-avg')) $('head-avg').innerText = activeCount > 0 ? Math.floor(liveRevenue/activeCount).toLocaleString() + " ₸" : "0 ₸";
         if($('head-top')) $('head-top').innerText = topTable ? `Стол ${topTable}` : "--";
     },
