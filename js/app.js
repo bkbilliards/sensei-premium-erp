@@ -83,16 +83,6 @@ const app = {
         $$('.overlay').forEach(p => p.classList.add('hidden'));
     },
 
-    logActivity: (text, icon) => {
-        const feed = $('activity-feed'); if(!feed) return;
-        const time = new Date().toLocaleTimeString('ru-RU').slice(0,5);
-        const item = document.createElement('div');
-        item.className = `feed-item`;
-        item.innerHTML = `<span class="feed-time">${time}</span> <span class="feed-icon">${icon}</span> <span class="text-white">${text}</span>`;
-        feed.prepend(item);
-        if(feed.children.length > 20) feed.lastChild.remove();
-    },
-
     // ГОРИЗОНТАЛЬНЫЕ СТРОКИ ОПЛАТЫ
     renderChecks: () => {
         const list = $('waiting-payments-list');
@@ -132,7 +122,6 @@ const app = {
         await supabase.from('active_checks').delete().eq('id', id);
         app.closeModals();
         app.ui.toast(`Оплата ${method} успешна`, 'success');
-        app.logActivity(`Оплата ${method}`, '💳');
     },
 
     math: {
