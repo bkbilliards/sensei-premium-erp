@@ -12,44 +12,42 @@ export function initTables(app, supabase) {
 
             grid.innerHTML = app.state.tables.sort((a,b)=>a.id-b.id).map(t => {
                 let isPlaying = t.status === 'В ИГРЕ';
-                let cls = isPlaying ? (t.paused ? 'paused' : 'playing') : '';
-                let statusText = isPlaying ? (t.paused ? '🟡 ПАУЗА' : '🟢 В ИГРЕ') : '⚫ СВОБОДЕН';
+                let cls = isPlaying ? (t.paused ? 'paused' : 'playing') : 'free';
+                let statusText = isPlaying ? (t.paused ? 'ПАУЗА' : 'В ИГРЕ') : 'СВОБОДЕН';
                 let cost = isPlaying ? app.math.getCost(t) : 0;
                 
-                // Кнопки для ПУСТОГО стола (1-click старт!)
+                // ИЕРАРХИЯ КНОПОК
                 let btnsFree = `
-                    <button class="btn-primary flex-1" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
-                    <button class="btn-ghost flex-1" onclick="app.ui.toast('Модуль БРОНЬ в разработке', 'warning')">📅 БРОНЬ</button>
-                    <button class="btn-ghost flex-1" onclick="app.ui.toast('Настройки стола в разработке', 'warning')">⚙️ НАСТР</button>`;
+                    <button class="btn-primary flex-1 shadow-gold" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
+                    <button class="btn-secondary flex-1" onclick="app.ui.toast('Бронь скоро', 'warning')">📅 БРОНЬ</button>
+                    <button class="btn-ghost flex-1" onclick="app.ui.toast('Настройки скоро', 'warning')">⚙️</button>`;
                 
-                // Кнопки для АКТИВНОГО стола
                 let btnsActive = `
                     <button class="btn-danger flex-1" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
-                    <button class="btn-ghost flex-1" onclick="app.ui.toast('Модуль БАР в разработке', 'warning')">🍹 БАР</button>
-                    <button class="btn-ghost flex-1" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶ ИГРАТЬ' : '⏸ ПАУЗА'}</button>
-                    <button class="btn-ghost flex-1" onclick="app.ui.toast('Перенос стола в разработке', 'warning')">🔁</button>`;
+                    <button class="btn-secondary flex-1" onclick="app.ui.toast('Бар скоро', 'warning')">🍹 БАР</button>
+                    <button class="btn-secondary flex-1" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶ ИГРАТЬ' : '⏸ ПАУЗА'}</button>
+                    <button class="btn-ghost" onclick="app.ui.toast('Перенос скоро', 'warning')">🔁</button>`;
 
                 return `
                 <div class="table-card ${cls}">
                     <div class="t-header">
                         <div class="flex-column">
                             <span class="t-num">СТОЛ ${t.id}</span>
-                            <span class="t-status mt-10">${statusText}</span>
+                            <span class="t-status mt-10 text-10 bold text-white letter-spacing"><span class="t-status-indicator"></span>${statusText}</span>
                         </div>
                         <div class="flex-column text-right">
                             <span class="t-timer" id="timer-${t.id}">${isPlaying ? '00:00:00' : '--:--'}</span>
                             <span class="t-cost" id="sum-${t.id}">${isPlaying ? cost + ' ₸' : ''}</span>
                         </div>
                     </div>
-                    ${isPlaying ? `<div class="t-info mb-10">👥 ${t.current_players || 2} игрока <br>👤 ${t.active_check_id || 'Гость'}</div>` : '<div class="t-info mb-10 text-center muted-text">Ожидание гостей...</div>'}
-                    <div class="flex-row gap-5 mt-auto">
+                    ${isPlaying ? `<div class="t-info mb-20 flex-between"><span>👥 ${t.current_players || 2} игрока</span> <span class="gold-text">👤 ${t.active_check_id || 'Гость'}</span></div>` : '<div class="t-info mb-20 text-center muted-text" style="height:15px;"></div>'}
+                    <div class="flex-row gap-10 mt-auto">
                         ${isPlaying ? btnsActive : btnsFree}
                     </div>
                 </div>`;
             }).join('');
         },
 
-        // --- МГНОВЕННЫЙ ПУСК В 1 КЛИК ---
         quickStart: async (id) => {
             await supabase.from('tables').update({ 
                 status: 'В ИГРЕ', 
@@ -61,16 +59,15 @@ export function initTables(app, supabase) {
                 active_check_id: `Гость (Стол ${id})`
             }).eq('id', id);
 
-            app.ui.toast(`▶ Стол ${id} мгновенно запущен!`, 'success');
-            app.logActivity(`▶ Быстрый старт: Стол ${id}`);
+            app.ui.toast(`Стол ${id} запущен!`, 'success');
+            app.logActivity(`▶ Запущен Стол ${id}`);
         },
 
-        // --- ПАНЕЛЬ СТОПА (Выезжает сбоку) ---
         openStopPanel: (id) => {
             let t = app.state.tables.find(x => x.id === id);
             let cost = app.math.getCost(t);
             $('stop-table-id').innerText = id;
-            $('stop-total-sum').innerText = cost + ' ₸';
+            $('stop-total-sum').innerText = cost.toLocaleString() + ' ₸';
             $('stop-guest-name').value = t.active_check_id || `Гость ${id}`;
             app.ui.openSidePanel('side-stop-table');
         },
@@ -90,11 +87,10 @@ export function initTables(app, supabase) {
             }).eq('id', id);
 
             app.ui.closeSidePanel('side-stop-table');
-            app.ui.toast(`Стол ${id} закрыт. Чек на ${cost}₸ создан!`, 'success');
+            app.ui.toast(`Чек на ${cost}₸ создан!`, 'success');
             app.logActivity(`⏹ Остановлен Стол ${id}. Чек: ${cost}₸`);
         },
 
-        // --- ПАУЗА ---
         togglePause: async (id) => {
             let t = app.state.tables.find(x => x.id === id);
             if (t.paused) {
