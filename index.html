@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENSEI ERP X | True POS</title>
+    <title>SENSEI ERP X | Finance Mode</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=JetBrains+Mono:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=17.0">
+    <link rel="stylesheet" href="css/style.css?v=18.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -37,13 +37,13 @@
                 </div>
                 
                 <div class="header-stats hide-mobile flex-row gap-15">
-                    <div class="stat-item"><span class="muted-text">💵 НАЛ</span><b id="head-cash" class="text-white">0 ₸</b></div>
-                    <div class="stat-item"><span class="muted-text">📱 QR</span><b id="head-qr" class="blue-text">0 ₸</b></div>
-                    <div class="stat-item"><span class="muted-text">🎱 СТОЛЫ</span><b id="head-tables-rev" class="text-white">0 ₸</b></div>
-                    <div class="stat-item"><span class="muted-text">🍹 БАР</span><b id="head-bar" class="text-white">0 ₸</b></div>
-                    <div class="stat-item"><span class="muted-text">⚠ ДОЛГИ</span><b id="head-debts" class="danger-text">0 ₸</b></div>
-                    <div class="stat-item"><span class="muted-text">📈 СРЕДНИЙ ЧЕК</span><b id="head-avg" class="text-white">0 ₸</b></div>
-                    <div class="stat-item"><span class="muted-text">🏆 ТОП СТОЛ</span><b id="head-top" class="gold-text">--</b></div>
+                    <div class="stat-item"><span class="muted-text">💵 ВЫРУЧКА</span><b id="head-total" class="gold-text text-14">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">📱 QR</span><b id="head-qr" class="blue-text text-14">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">🎱 СТОЛЫ</span><b id="head-tables-rev" class="text-white text-14">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">🍹 БАР</span><b id="head-bar" class="text-white text-14">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">⚠ ДОЛГИ</span><b id="head-debts" class="danger-text text-14">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">📈 СРЕДНИЙ ЧЕК</span><b id="head-avg" class="text-white text-14">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">🏆 ТОП СТОЛ</span><b id="head-top" class="gold-text text-14">--</b></div>
                 </div>
 
                 <div class="action-zone flex-column text-right gap-5 hide-mobile">
@@ -69,10 +69,8 @@
 
         <main class="main-workspace container">
             <div id="tab-hall" class="tab-pane active grid-layout-hall">
-                
                 <div class="left-workspace flex-column gap-30">
                     <div id="tablesGrid" class="map-view-container"></div>
-                    
                     <div class="mt-20 mb-40">
                         <h3 class="gold-text text-12 mb-15 uppercase letter-spacing flex-row align-center gap-10">
                             <span>💳 ОЖИДАЮТ ОПЛАТЫ</span>
@@ -92,7 +90,6 @@
                             <button class="action-btn" onclick="app.ui.toast('Вызов базы', 'warning')"><span class="icon text-white">👤</span>ГОСТЬ</button>
                         </div>
                     </div>
-
                     <div class="control-section mb-20 mt-auto">
                         <button class="btn-dark w-100 py-15 mb-10" onclick="app.ui.toast('Журнал событий', 'success')">📡 ЖУРНАЛ СМЕНЫ</button>
                         <div class="flex-row gap-10">
@@ -103,10 +100,59 @@
                 </div>
             </div>
             
+            <div id="tab-acc" class="tab-pane hidden">
+                <div class="flex-between mb-20">
+                    <h2 class="gold-text uppercase letter-spacing m-0">📈 ФИНАНСЫ И АРХИВ</h2>
+                    <div class="flex-row gap-10">
+                        <button class="btn-dark active">СЕГОДНЯ</button>
+                        <button class="btn-dark">ВЧЕРА</button>
+                        <button class="btn-dark"><span class="icon text-14">📅</span> ПЕРИОД</button>
+                    </div>
+                </div>
+
+                <div class="archive-stats-grid mb-30">
+                    <div class="glass-card stat-card">
+                        <div class="muted-text mb-5 text-11">ИТОГО ЗАКРЫТО</div>
+                        <div class="text-24 gold-text bold" id="arch-total-sum">0 ₸</div>
+                    </div>
+                    <div class="glass-card stat-card">
+                        <div class="muted-text mb-5 text-11">💵 НАЛИЧНЫМИ</div>
+                        <div class="text-24 success-text bold" id="arch-cash-sum">0 ₸</div>
+                    </div>
+                    <div class="glass-card stat-card">
+                        <div class="muted-text mb-5 text-11">📱 QR ПЕРЕВОДЫ</div>
+                        <div class="text-24 blue-text bold" id="arch-qr-sum">0 ₸</div>
+                    </div>
+                    <div class="glass-card stat-card">
+                        <div class="muted-text mb-5 text-11">🧾 ЧЕКОВ</div>
+                        <div class="text-24 text-white bold" id="arch-count">0</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel" style="padding: 0; overflow: hidden;">
+                    <table class="archive-table w-100">
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Стол</th>
+                                <th>Гость</th>
+                                <th>Аренда</th>
+                                <th>Бар</th>
+                                <th>Сумма</th>
+                                <th>Оплата</th>
+                                <th class="text-right">Админ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archive-list">
+                            <tr><td colspan="8" class="text-center py-15 muted-text">Загрузка архива...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div id="tab-stock" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">РАЗДЕЛ БАР СКОРО</h2></div>
             <div id="tab-debts" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">РАЗДЕЛ ДОЛГИ СКОРО</h2></div>
             <div id="tab-crm" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">РАЗДЕЛ ГОСТИ СКОРО</h2></div>
-            <div id="tab-acc" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ФИНАНСЫ СКОРО</h2></div>
             <div id="tab-owner" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ПАНЕЛЬ ХОЗЯИНА СКОРО</h2></div>
         </main>
 
@@ -123,13 +169,11 @@
             <h2 class="gold-text">🎱 СТОЛ <span id="manage-table-id"></span></h2>
             <div class="modal-close" onclick="app.ui.closeSidePanel('side-manage-table')">✕</div>
         </div>
-        
         <div class="glass-card mb-30 text-center" style="background: #11141A;">
             <div class="muted-text text-11 mb-5 uppercase letter-spacing">ТЕКУЩИЙ СТАТУС</div>
             <div class="text-24 text-white bold mb-5" id="manage-timer">00:00:00</div>
             <div class="text-18 gold-text bold" id="manage-cost">0 ₸</div>
         </div>
-
         <div class="muted-text mb-10 text-10">ДЕЙСТВИЯ СО СТОЛОМ</div>
         <div class="flex-column gap-10" id="manage-actions-active">
             <button class="btn-dark py-15" onclick="app.ui.toast('Гость привязан', 'success')">👤 ПРИВЯЗАТЬ ГОСТЯ</button>
@@ -143,13 +187,28 @@
             </div>
             <button class="btn-dark py-15" onclick="app.ui.toast('История стола', 'success')">📜 ИСТОРИЯ ИГРЫ</button>
         </div>
-
         <div class="flex-column gap-10 hidden" id="manage-actions-free">
             <button class="btn-dark py-15" onclick="app.ui.toast('Стол забронирован', 'success')">📅 ДОБАВИТЬ БРОНЬ</button>
             <button class="btn-dark py-15" onclick="app.ui.toast('Быстрый старт', 'success')">⚡ БЫСТРЫЙ СТАРТ</button>
             <button class="btn-dark py-15 blue-text" style="border-color:rgba(10,132,255,0.3);" onclick="app.ui.toast('Уборка начата', 'warning')">🧹 УБОРКА СТОЛА</button>
             <button class="btn-dark py-15 danger-text" style="border-color:rgba(255,69,58,0.3);" onclick="app.ui.toast('Стол закрыт', 'danger')">🛠 ТЕХНИЧЕСКИЙ РЕЖИМ</button>
         </div>
+    </div>
+
+    <div id="side-stop-table" class="side-panel">
+        <div class="flex-between mb-30">
+            <h2 class="danger-text">ЗАКРЫТЬ СТОЛ <span id="stop-table-id"></span></h2>
+            <div class="modal-close" onclick="app.ui.closeSidePanel('side-stop-table')">✕</div>
+        </div>
+        <div class="glass-card mb-30 text-center">
+            <div class="muted-text text-11 mb-10 uppercase letter-spacing">ВРЕМЯ ИГРЫ: <span id="stop-time-played" class="text-white"></span></div>
+            <div class="huge-text gold-text" id="stop-total-sum">0 ₸</div>
+        </div>
+        <div class="input-group">
+            <label>ИМЯ (ДЛЯ ЧЕКА)</label>
+            <input type="text" id="stop-guest-name" class="cyber-input" placeholder="Гость">
+        </div>
+        <button onclick="app.tables.confirmStop()" class="btn-danger big-btn mt-auto mb-20">ВЫСТАВИТЬ СЧЕТ</button>
     </div>
 
     <div id="modal-receipt" class="overlay hidden">
@@ -175,6 +234,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/app.js?v=17.0"></script>
+    <script type="module" src="js/app.js?v=18.0"></script>
 </body>
 </html>
