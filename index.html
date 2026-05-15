@@ -3,40 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENSEI ERP X | Enterprise</title>
+    <title>SENSEI ERP X | Live Control Center</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <div id="toast-container" class="toast-container no-print"></div>
+    <div id="toast-container" class="toast-container"></div>
 
-    <div id="authScreen" class="auth-screen active no-print">
+    <div id="authScreen" class="auth-screen active">
         <div class="glass-card auth-card">
             <div class="logo-circle pulse-gold">S</div>
             <h1 class="brand-title gold-gradient">SENSEI</h1>
             <p class="tagline">ERP ENTERPRISE X</p>
             <div class="input-group">
                 <label>СМЕНА / АВТОРИЗАЦИЯ</label>
-                <select id="staffSelect" class="cyber-input"><option>Загрузка персонала...</option></select>
+                <select id="staffSelect" class="cyber-input"><option>Загрузка...</option></select>
             </div>
             <div class="input-group">
                 <label>PIN-КОД</label>
-                <input type="password" id="pinInput" class="cyber-input text-center text-24" placeholder="••••" inputmode="numeric" style="letter-spacing:15px;">
+                <input type="password" id="pinInput" class="cyber-input text-center text-24" placeholder="••••" inputmode="numeric">
             </div>
             <button type="button" id="btn-login" class="btn-primary big-btn mt-10">ВХОД В СИСТЕМУ</button>
         </div>
     </div>
 
-    <div id="appScreen" class="hidden no-print">
+    <div id="appScreen" class="hidden">
         <header class="topbar glass-panel">
             <div class="container topbar-container">
                 <div class="brand-zone">
                     <div class="brand gold-gradient">SENSEI</div>
                     <div class="role-badge" id="userName">---</div>
-                    <div id="syncStatus" class="success-text bold text-12 ml-10">ONLINE</div>
+                    <div id="syncStatus" class="success-text bold text-12 ml-10">● LIVE</div>
                 </div>
                 <div class="action-zone">
+                    <div id="live-clock" class="muted-text bold text-18 mr-20">--:--</div>
                     <button class="btn-ghost btn-sm" id="btn-logout">🚪 ВЫХОД / Z-ОТЧЕТ</button>
                 </div>
             </div>
@@ -44,40 +45,79 @@
 
         <nav class="cyber-nav hide-mobile">
             <div class="container nav-container">
-                <button class="nav-btn active" data-tab="hall">🎱 ЗАЛ</button>
-                <button class="nav-btn" data-tab="checks">🧾 ЧЕКИ</button>
-                <button class="nav-btn" data-tab="bar">🍹 БАР</button>
-                <button class="nav-btn" data-tab="crm">👥 CRM</button>
+                <button class="nav-btn active" data-tab="hall">🎱 ЗАЛ И ЧЕКИ</button>
+                <button class="nav-btn" data-tab="stock">📦 СКЛАД И БАР</button>
                 <button class="nav-btn" data-tab="debts">📓 ДОЛГИ</button>
-                <button class="nav-btn" data-tab="stock">📦 СКЛАД</button>
+                <button class="nav-btn" data-tab="crm">👥 КЛИЕНТЫ</button>
+                <button class="nav-btn" data-tab="cash">💵 КАССА</button>
                 <button class="nav-btn owner-only success-text" data-tab="acc" style="border-color:var(--success);">📈 БУХГАЛТЕРИЯ</button>
                 <button class="nav-btn owner-only gold-text" data-tab="owner" style="border-color:var(--gold);">👑 ХОЗЯИН</button>
             </div>
         </nav>
 
         <main class="main-workspace container">
-            <div id="tab-hall" class="tab-pane active">
-                <div class="flex-between mb-20">
-                    <h2 class="gold-text">ИГРОВЫЕ СТОЛЫ</h2>
-                    <div id="live-clock" class="muted-text bold">--:--:--</div>
-                </div>
+            <div id="tab-hall" class="tab-pane active grid-layout-hall">
                 <div id="tablesGrid" class="map-view-container"></div>
+                
+                <div class="live-feed-panel glass-panel">
+                    <h3 class="gold-text text-14 mb-20">⚡ QUICK ACTIONS</h3>
+                    <div class="grid-2 gap-10 mb-20">
+                        <button class="btn-ghost btn-sm">🍹 БАР</button>
+                        <button class="btn-ghost btn-sm">📓 ДОЛГ</button>
+                        <button class="btn-ghost btn-sm text-white" style="border-color:#0A84FF;">💸 РАСХОД</button>
+                        <button class="btn-ghost btn-sm danger-text" style="border-color:var(--danger);">⚠️ ИНЦИДЕНТ</button>
+                    </div>
+                    <h3 class="gold-text text-14 mb-10">📜 LIVE ACTIVITY</h3>
+                    <div id="activity-feed" class="activity-feed-list overflow-auto">
+                        <div class="muted-text text-11">Ждем событий...</div>
+                    </div>
+                </div>
             </div>
-            <div id="tab-checks" class="tab-pane hidden"><h2 class="gold-text">АКТИВНЫЕ ЧЕКИ</h2><div id="checksGrid" class="checks-grid"></div></div>
-            <div id="tab-bar" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">БАР (В РАЗРАБОТКЕ)</h2></div>
-            <div id="tab-crm" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">CRM (В РАЗРАБОТКЕ)</h2></div>
-            <div id="tab-debts" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ДОЛГИ (В РАЗРАБОТКЕ)</h2></div>
-            <div id="tab-stock" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">СКЛАД (В РАЗРАБОТКЕ)</h2></div>
-            <div id="tab-acc" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">БУХГАЛТЕРИЯ (ТОЛЬКО ХОЗЯИН)</h2></div>
-            <div id="tab-owner" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ПАНЕЛЬ ХОЗЯИНА</h2></div>
+            
+            <div id="tab-stock" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">СКЛАД В РАЗРАБОТКЕ</h2></div>
+            <div id="tab-debts" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ДОЛГИ В РАЗРАБОТКЕ</h2></div>
+            <div id="tab-crm" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">CRM В РАЗРАБОТКЕ</h2></div>
+            <div id="tab-cash" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">КАССА В РАЗРАБОТКЕ</h2></div>
+            <div id="tab-acc" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">БУХГАЛТЕРИЯ В РАЗРАБОТКЕ</h2></div>
+            <div id="tab-owner" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ХОЗЯИН В РАЗРАБОТКЕ</h2></div>
         </main>
+    </div>
 
-        <div class="mobile-nav">
-            <button class="mobile-nav-item active" data-tab="hall"><div class="icon">🎱</div>ЗАЛ</button>
-            <button class="mobile-nav-item" data-tab="checks"><div class="icon">🧾</div>ЧЕКИ</button>
-            <button class="mobile-nav-item" data-tab="bar"><div class="icon">🍹</div>БАР</button>
-            <button class="mobile-nav-item" data-tab="cash"><div class="icon">💵</div>КАССА</button>
+    <div id="side-start-table" class="side-panel">
+        <div class="flex-between mb-20">
+            <h2 class="gold-text">ПУСК СТОЛА <span id="start-table-id"></span></h2>
+            <div class="modal-close" onclick="app.ui.closeSidePanel('side-start-table')">✕</div>
         </div>
+        <div class="input-group">
+            <label>ИМЯ ГОСТЯ</label>
+            <input type="text" id="start-guest-name" class="cyber-input" placeholder="Гость...">
+        </div>
+        <div class="input-group">
+            <label>КОЛИЧЕСТВО ИГРОКОВ</label>
+            <select id="start-players" class="cyber-input">
+                <option value="1">1 Игрок</option>
+                <option value="2" selected>2 Игрока</option>
+                <option value="3">3 Игрока</option>
+                <option value="4">4 Игрока</option>
+            </select>
+        </div>
+        <button onclick="app.tables.confirmStart()" class="btn-primary big-btn shadow-gold mt-20">▶ ОТКРЫТЬ СТОЛ</button>
+    </div>
+
+    <div id="side-stop-table" class="side-panel">
+        <div class="flex-between mb-20">
+            <h2 class="danger-text">ОСТАНОВКА СТОЛА <span id="stop-table-id"></span></h2>
+            <div class="modal-close" onclick="app.ui.closeSidePanel('side-stop-table')">✕</div>
+        </div>
+        <div class="glass-card mb-20 text-center">
+            <div class="muted-text text-11 mb-10">ИТОГО К ОПЛАТЕ:</div>
+            <div class="huge-text gold-text" id="stop-total-sum">0 ₸</div>
+        </div>
+        <div class="input-group">
+            <label>ИМЯ (ДЛЯ ЧЕКА)</label>
+            <input type="text" id="stop-guest-name" class="cyber-input">
+        </div>
+        <button onclick="app.tables.confirmStop()" class="btn-danger big-btn shadow-red mt-20">■ ЗАКРЫТЬ СТОЛ И СОЗДАТЬ ЧЕК</button>
     </div>
 
     <script type="module" src="js/app.js"></script>
