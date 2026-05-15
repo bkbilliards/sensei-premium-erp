@@ -14,14 +14,14 @@ export function initTables(app, supabase) {
                 
                 let btnsFree = `
                     <button class="btn-gold shadow-gold flex-1" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
-                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Бронь', 'warning')">📅</button>
-                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Настр', 'warning')">⚙️</button>`;
+                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Пересадка', 'warning')">🔄</button>
+                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('История стола', 'warning')">📜</button>`;
                 
                 let btnsActive = `
                     <button class="btn-danger shadow-red flex-1" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
                     <button class="btn-dark" style="width: 45px;" onclick="app.tables.openFastBar(${t.id})">🍹</button>
                     <button class="btn-dark" style="width: 45px;" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶' : '⏸'}</button>
-                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Пересадка', 'warning')">🔀</button>`;
+                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Пересадка', 'warning')">🔄</button>`;
 
                 return `
                 <div class="table-card ${cls}">
@@ -76,7 +76,7 @@ export function initTables(app, supabase) {
 
             await supabase.from('active_checks').insert([{
                 id: Date.now(), table_id: id.toString(), guest_name: name, time_amount: cost, total: cost, created_by: app.session.user.name, 
-                created_at: new Date().toISOString(), played_ms: playedMs // Сохраняем время для чека
+                created_at: new Date().toISOString(), played_ms: playedMs 
             }]);
 
             await supabase.from('tables').update({ 
@@ -101,7 +101,6 @@ export function initTables(app, supabase) {
             }
         },
 
-        // БЫСТРЫЙ БАР
         openFastBar: (id) => {
             $('bar-table-id').innerText = id;
             app.ui.openSidePanel('side-fast-bar');
