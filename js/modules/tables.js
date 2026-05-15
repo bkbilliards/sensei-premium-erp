@@ -12,16 +12,17 @@ export function initTables(app, supabase) {
                 let cls = isPlaying ? (t.paused ? 'paused' : 'playing') : 'free';
                 let cost = isPlaying ? app.math.getCost(t) : 0;
                 
+                // ЛОГИКА ERP: Разные кнопки для разных состояний
                 let btnsFree = `
-                    <button class="btn-gold shadow-gold flex-1" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
-                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Пересадка', 'warning')">🔄</button>
-                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('История стола', 'warning')">📜</button>`;
+                    <button class="btn-gold flex-1" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
+                    <button class="btn-dark" style="width: 60px;" onclick="app.ui.toast('Бронь стола', 'warning')">📅</button>
+                    <button class="btn-dark" style="width: 60px;" onclick="app.ui.toast('Настройки', 'warning')">⚙️</button>`;
                 
                 let btnsActive = `
-                    <button class="btn-danger shadow-red flex-1" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
-                    <button class="btn-dark" style="width: 45px;" onclick="app.tables.openFastBar(${t.id})">🍹</button>
-                    <button class="btn-dark" style="width: 45px;" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶' : '⏸'}</button>
-                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Пересадка', 'warning')">🔄</button>`;
+                    <button class="btn-danger flex-1" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
+                    <button class="btn-dark" style="width: 50px;" onclick="app.ui.toast('Бар', 'warning')">🍹</button>
+                    <button class="btn-dark" style="width: 50px;" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶' : '⏸'}</button>
+                    <button class="btn-dark" style="width: 50px;" onclick="app.ui.toast('Печать предчека', 'success')">🧾</button>`;
 
                 return `
                 <div class="table-card ${cls}">
@@ -36,8 +37,8 @@ export function initTables(app, supabase) {
                         </div>
                         ${isPlaying ? `
                         <div class="flex-column text-right gap-5">
-                            <span class="badge" style="background:rgba(255,255,255,0.05); color:#828282;">👥 ${t.current_players || 2}</span>
-                            <span class="badge badge-yellow">🍹 0 ₸</span>
+                            <span class="badge" style="background:rgba(255,255,255,0.05); color:#828282;">👤 ${t.active_check_id || 'Гость'}</span>
+                            <span class="badge" style="background:rgba(212,175,55,0.1); color:var(--gold);">🍹 0 ₸</span>
                         </div>` : ''}
                     </div>
                     
@@ -54,7 +55,7 @@ export function initTables(app, supabase) {
                 status: 'В ИГРЕ', started_at: Date.now(), accumulated_cost: 0, accumulated_time: 0, paused: false,
                 current_players: 2, active_check_id: `Гость`
             }).eq('id', id);
-            app.ui.toast(`Стол ${id} запущен!`, 'success');
+            app.ui.toast(`Стол ${id} запущен`, 'success');
             app.logActivity(`Старт: Стол ${id}`, '▶');
         },
 
@@ -84,7 +85,7 @@ export function initTables(app, supabase) {
             }).eq('id', id);
 
             app.ui.closeSidePanel('side-stop-table');
-            app.ui.toast(`Счет передан на кассу!`, 'success');
+            app.ui.toast(`Счет передан на кассу`, 'success');
             app.logActivity(`Стоп: Стол ${id} (${cost} ₸)`, '⏹');
         },
 
@@ -99,16 +100,6 @@ export function initTables(app, supabase) {
                 await supabase.from('tables').update({ paused: true, accumulated_time: ms, accumulated_cost: cost, started_at: null }).eq('id', id);
                 app.logActivity(`Пауза: Стол ${id}`, '⏸');
             }
-        },
-
-        openFastBar: (id) => {
-            $('bar-table-id').innerText = id;
-            app.ui.openSidePanel('side-fast-bar');
-        },
-        addBarItem: (el) => {
-            app.ui.playSound('start');
-            app.ui.toast(`Добавлено: ${el.innerText.split(' ')[1]}`, 'success');
-            app.logActivity(`${el.innerText.split(' ')[1]} на Стол ${$('bar-table-id').innerText}`, '🍹');
         }
     };
 }
