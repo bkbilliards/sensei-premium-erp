@@ -3,25 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENSEI ERP X | Business Logic</title>
+    <title>SENSEI ERP X | Enterprise</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=10.0">
+    <link rel="stylesheet" href="css/style.css?v=11.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div id="toast-container" class="toast-container"></div>
 
-    <div class="floating-dock hide-mobile no-print">
-        <button class="dock-btn bar-glow" title="Быстрый Бар (F1)" onclick="app.ui.toast('Вызов бара', 'warning')">🍹</button>
-        <button class="dock-btn debt-glow" title="Долг (F2)" onclick="app.ui.toast('Панель долгов', 'warning')">📓</button>
-        <button class="dock-btn danger-glow" title="Инцидент" onclick="app.ui.toast('Внимание!', 'danger')">⚠️</button>
-    </div>
-
     <div id="authScreen" class="auth-screen active">
         <div class="glass-card auth-card">
             <div class="logo-circle pulse-gold">S</div>
             <h1 class="brand-title gold-gradient">SENSEI</h1>
-            <p class="tagline">SPEED OPERATING SYSTEM</p>
+            <p class="tagline">ENTERPRISE OS</p>
             <div class="input-group">
                 <label>СМЕНА / АВТОРИЗАЦИЯ</label>
                 <select id="staffSelect" class="cyber-input"><option>Загрузка...</option></select>
@@ -65,7 +59,8 @@
 
         <main class="main-workspace container">
             <div id="tab-hall" class="tab-pane active grid-layout-hall">
-                <div class="flex-column gap-20">
+                
+                <div class="left-workspace flex-column gap-20">
                     <div id="tablesGrid" class="map-view-container"></div>
                     
                     <div class="mt-10">
@@ -77,17 +72,27 @@
                     </div>
                 </div>
                 
-                <div class="live-feed-panel glass-panel hide-mobile">
+                <div class="right-control-panel glass-panel hide-mobile">
+                    <h3 class="gold-text text-12 mb-15 uppercase letter-spacing">⚡ QUICK ACTIONS</h3>
+                    <div class="control-actions-grid mb-30">
+                        <button class="action-btn" onclick="app.ui.toast('Бар', 'warning')"><span class="icon">🍹</span>БАР</button>
+                        <button class="action-btn" onclick="app.ui.toast('Расход', 'warning')"><span class="icon blue-text">💸</span>РАСХОД</button>
+                        <button class="action-btn" onclick="app.ui.toast('Бронь', 'warning')"><span class="icon gold-text">📅</span>БРОНЬ</button>
+                        <button class="action-btn" onclick="app.ui.toast('Долг', 'warning')"><span class="icon danger-text">📓</span>ДОЛГ</button>
+                        <button class="action-btn" onclick="app.ui.toast('Тех. Режим', 'warning')"><span class="icon">🛠</span>РЕМОНТ</button>
+                        <button class="action-btn" style="border-color: rgba(255,69,58,0.3);" onclick="app.ui.toast('Инцидент зафиксирован!', 'danger')"><span class="icon danger-text">🚨</span>АЛАРМ</button>
+                    </div>
+
                     <h3 class="gold-text text-12 mb-10 uppercase letter-spacing">📡 LIVE EVENTS</h3>
                     <div id="activity-feed" class="activity-feed-list"></div>
                 </div>
             </div>
             
-            <div id="tab-stock" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">СКОРО</h2></div>
-            <div id="tab-debts" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">СКОРО</h2></div>
-            <div id="tab-crm" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">СКОРО</h2></div>
-            <div id="tab-acc" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">СКОРО</h2></div>
-            <div id="tab-owner" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">СКОРО</h2></div>
+            <div id="tab-stock" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">РАЗДЕЛ БАР СКОРО</h2></div>
+            <div id="tab-debts" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">РАЗДЕЛ ДОЛГИ СКОРО</h2></div>
+            <div id="tab-crm" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">РАЗДЕЛ CRM СКОРО</h2></div>
+            <div id="tab-acc" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">БУХГАЛТЕРИЯ СКОРО</h2></div>
+            <div id="tab-owner" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ПАНЕЛЬ ХОЗЯИНА СКОРО</h2></div>
         </main>
 
         <div class="mobile-bottom-nav no-print">
@@ -148,7 +153,7 @@
             <div class="huge-text gold-text" id="stop-total-sum">0 ₸</div>
         </div>
         <div class="input-group">
-            <label>ИМЯ (необязательно)</label>
+            <label>ИМЯ ДЛЯ ЧЕКА</label>
             <input type="text" id="stop-guest-name" class="cyber-input" placeholder="Гость">
         </div>
         <button onclick="app.tables.confirmStop()" class="btn-danger big-btn shadow-red mt-auto mb-20">ВЫСТАВИТЬ СЧЕТ</button>
@@ -172,6 +177,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/app.js?v=10.0"></script>
+    <script type="module" src="js/app.js?v=11.0"></script>
 </body>
 </html>
