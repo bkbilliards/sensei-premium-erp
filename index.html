@@ -62,10 +62,10 @@
                 <div class="live-feed-panel glass-panel">
                     <h3 class="gold-text text-14 mb-20">⚡ QUICK ACTIONS</h3>
                     <div class="grid-2 gap-10 mb-20">
-                        <button class="btn-ghost btn-sm">🍹 БАР</button>
-                        <button class="btn-ghost btn-sm">📓 ДОЛГ</button>
-                        <button class="btn-ghost btn-sm text-white" style="border-color:#0A84FF;">💸 РАСХОД</button>
-                        <button class="btn-ghost btn-sm danger-text" style="border-color:var(--danger);">⚠️ ИНЦИДЕНТ</button>
+                        <button class="btn-ghost btn-sm" onclick="app.ui.toast('Модуль БАР скоро будет', 'warning')">🍹 БАР</button>
+                        <button class="btn-ghost btn-sm" onclick="app.ui.toast('Модуль ДОЛГИ скоро будет', 'warning')">📓 ДОЛГ</button>
+                        <button class="btn-ghost btn-sm text-white" style="border-color:#0A84FF;" onclick="app.ui.toast('Модуль РАСХОД скоро будет', 'warning')">💸 РАСХОД</button>
+                        <button class="btn-ghost btn-sm danger-text" style="border-color:var(--danger);" onclick="app.ui.toast('Инцидент зафиксирован', 'danger')">⚠️ ИНЦИДЕНТ</button>
                     </div>
                     <h3 class="gold-text text-14 mb-10">📜 LIVE ACTIVITY</h3>
                     <div id="activity-feed" class="activity-feed-list overflow-auto">
@@ -81,27 +81,6 @@
             <div id="tab-acc" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">БУХГАЛТЕРИЯ В РАЗРАБОТКЕ</h2></div>
             <div id="tab-owner" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ХОЗЯИН В РАЗРАБОТКЕ</h2></div>
         </main>
-    </div>
-
-    <div id="side-start-table" class="side-panel">
-        <div class="flex-between mb-20">
-            <h2 class="gold-text">ПУСК СТОЛА <span id="start-table-id"></span></h2>
-            <div class="modal-close" onclick="app.ui.closeSidePanel('side-start-table')">✕</div>
-        </div>
-        <div class="input-group">
-            <label>ИМЯ ГОСТЯ</label>
-            <input type="text" id="start-guest-name" class="cyber-input" placeholder="Гость...">
-        </div>
-        <div class="input-group">
-            <label>КОЛИЧЕСТВО ИГРОКОВ</label>
-            <select id="start-players" class="cyber-input">
-                <option value="1">1 Игрок</option>
-                <option value="2" selected>2 Игрока</option>
-                <option value="3">3 Игрока</option>
-                <option value="4">4 Игрока</option>
-            </select>
-        </div>
-        <button onclick="app.tables.confirmStart()" class="btn-primary big-btn shadow-gold mt-20">▶ ОТКРЫТЬ СТОЛ</button>
     </div>
 
     <div id="side-stop-table" class="side-panel">
