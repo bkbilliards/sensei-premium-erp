@@ -16,18 +16,18 @@ export function initTables(app, supabase) {
                 let statusText = isPlaying ? (t.paused ? '🟡 ПАУЗА' : '🟢 В ИГРЕ') : '⚫ СВОБОДЕН';
                 let cost = isPlaying ? app.math.getCost(t) : 0;
                 
-                // Кнопки для пустого стола
+                // Кнопки для ПУСТОГО стола (1-click старт!)
                 let btnsFree = `
-                    <button class="btn-primary flex-1" onclick="app.tables.openStartPanel(${t.id})">▶ ПУСК</button>
-                    <button class="btn-ghost flex-1">📅 БРОНЬ</button>
-                    <button class="btn-ghost flex-1">⚙️ НАСТР</button>`;
+                    <button class="btn-primary flex-1" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
+                    <button class="btn-ghost flex-1" onclick="app.ui.toast('Модуль БРОНЬ в разработке', 'warning')">📅 БРОНЬ</button>
+                    <button class="btn-ghost flex-1" onclick="app.ui.toast('Настройки стола в разработке', 'warning')">⚙️ НАСТР</button>`;
                 
-                // Кнопки для активного стола
+                // Кнопки для АКТИВНОГО стола
                 let btnsActive = `
                     <button class="btn-danger flex-1" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
-                    <button class="btn-ghost flex-1">🍹 БАР</button>
+                    <button class="btn-ghost flex-1" onclick="app.ui.toast('Модуль БАР в разработке', 'warning')">🍹 БАР</button>
                     <button class="btn-ghost flex-1" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶ ИГРАТЬ' : '⏸ ПАУЗА'}</button>
-                    <button class="btn-ghost flex-1">🔁</button>`;
+                    <button class="btn-ghost flex-1" onclick="app.ui.toast('Перенос стола в разработке', 'warning')">🔁</button>`;
 
                 return `
                 <div class="table-card ${cls}">
@@ -49,29 +49,23 @@ export function initTables(app, supabase) {
             }).join('');
         },
 
-        // --- ПАНЕЛЬ СТАРТА ---
-        openStartPanel: (id) => {
-            $('start-table-id').innerText = id;
-            $('start-guest-name').value = '';
-            app.ui.openSidePanel('side-start-table');
-        },
-
-        confirmStart: async () => {
-            let id = parseInt($('start-table-id').innerText);
-            let name = $('start-guest-name').value.trim() || `Гость (Стол ${id})`;
-            let players = parseInt($('start-players').value) || 2;
-
+        // --- МГНОВЕННЫЙ ПУСК В 1 КЛИК ---
+        quickStart: async (id) => {
             await supabase.from('tables').update({ 
-                status: 'В ИГРЕ', started_at: Date.now(), accumulated_cost: 0, accumulated_time: 0, paused: false,
-                current_players: players, active_check_id: name
+                status: 'В ИГРЕ', 
+                started_at: Date.now(), 
+                accumulated_cost: 0, 
+                accumulated_time: 0, 
+                paused: false,
+                current_players: 2, 
+                active_check_id: `Гость (Стол ${id})`
             }).eq('id', id);
 
-            app.ui.closeSidePanel('side-start-table');
-            app.ui.toast(`Стол ${id} запущен!`, 'success');
-            app.logActivity(`▶ Запущен Стол ${id} (${name})`);
+            app.ui.toast(`▶ Стол ${id} мгновенно запущен!`, 'success');
+            app.logActivity(`▶ Быстрый старт: Стол ${id}`);
         },
 
-        // --- ПАНЕЛЬ СТОПА ---
+        // --- ПАНЕЛЬ СТОПА (Выезжает сбоку) ---
         openStopPanel: (id) => {
             let t = app.state.tables.find(x => x.id === id);
             let cost = app.math.getCost(t);
