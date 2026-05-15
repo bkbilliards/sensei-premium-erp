@@ -12,42 +12,35 @@ export function initTables(app, supabase) {
                 let cls = isPlaying ? (t.paused ? 'paused' : 'playing') : 'free';
                 let cost = isPlaying ? app.math.getCost(t) : 0;
                 
-                // Элегантная логика для статуса (без огромного желтого текста)
-                let statusBlock = '';
-                if (isPlaying) {
-                    statusBlock = `<span class="muted-text mb-10">СУММА ИГРЫ</span><span class="t-cost" id="sum-${t.id}">${cost} ₸</span>`;
-                } else if (t.accumulated_cost > 0) {
-                    statusBlock = `<span class="muted-text mb-10">ПОСЛЕДНИЙ ЧЕК</span><span class="gold-text text-24 bold">${t.accumulated_cost} ₸</span>`;
-                } else {
-                    statusBlock = `<span class="muted-text mb-10">СТАТУС</span><span class="text-white text-18 bold">Ожидание гостей</span>`;
-                }
-
-                // Кнопки с правильными пропорциями (ПУСК шире, иконки квадратные)
                 let btnsFree = `
-                    <button class="btn-gold shadow-gold" style="flex: 2;" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
-                    <button class="btn-dark" style="flex: 1;" onclick="app.ui.toast('Бронь скоро', 'warning')">📅</button>
-                    <button class="btn-dark" style="flex: 1;" onclick="app.ui.toast('Настройки', 'warning')">⚙️</button>`;
+                    <button class="btn-gold shadow-gold flex-1" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
+                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Бронь', 'warning')">📅</button>
+                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Настр', 'warning')">⚙️</button>`;
                 
                 let btnsActive = `
-                    <button class="btn-danger shadow-red" style="flex: 2;" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
-                    <button class="btn-dark" style="flex: 1;" onclick="app.ui.toast('Бар скоро', 'warning')">🍹</button>
-                    <button class="btn-dark" style="flex: 1;" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶' : '⏸'}</button>`;
+                    <button class="btn-danger shadow-red flex-1" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
+                    <button class="btn-dark" style="width: 45px;" onclick="app.ui.toast('Бар', 'warning')">🍹</button>
+                    <button class="btn-dark" style="width: 45px;" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶' : '⏸'}</button>`;
 
                 return `
                 <div class="table-card ${cls}">
-                    <div class="flex-between mb-20">
+                    <div class="flex-between mb-15">
                         <span class="t-num">СТОЛ ${t.id}</span>
                         <span class="t-timer" id="timer-${t.id}">${isPlaying ? '00:00' : '--:--'}</span>
                     </div>
                     
-                    <div class="flex-between align-center mb-30" style="min-height: 50px;">
+                    <div class="flex-between align-center mb-20" style="min-height: 40px;">
                         <div class="flex-column">
-                            ${statusBlock}
+                            <span class="t-cost" id="sum-${t.id}">${isPlaying ? cost + ' ₸' : (t.accumulated_cost ? t.accumulated_cost + ' ₸' : 'Свободен')}</span>
                         </div>
-                        ${isPlaying ? `<div class="badge badge-yellow">👤 ${t.active_check_id || 'Гость'}</div>` : ''}
+                        ${isPlaying ? `
+                        <div class="flex-column text-right">
+                            <span class="muted-text">👤 ${t.current_players || 2} игр</span>
+                            <span class="muted-text">🍹 0 ₸</span>
+                        </div>` : ''}
                     </div>
                     
-                    <div class="flex-row gap-10 mt-auto">
+                    <div class="flex-row mt-auto">
                         ${isPlaying ? btnsActive : btnsFree}
                     </div>
                 </div>`;
@@ -55,12 +48,13 @@ export function initTables(app, supabase) {
         },
 
         quickStart: async (id) => {
+            app.ui.playSound('start');
             await supabase.from('tables').update({ 
                 status: 'В ИГРЕ', started_at: Date.now(), accumulated_cost: 0, accumulated_time: 0, paused: false,
-                active_check_id: 'Гость'
+                current_players: 2, active_check_id: `Гость`
             }).eq('id', id);
             app.ui.toast(`Стол ${id} запущен!`, 'success');
-            app.logActivity(`▶ Старт: Стол ${id}`, 'start');
+            app.logActivity(`Стол ${id}`, '▶');
         },
 
         openStopPanel: (id) => {
@@ -68,18 +62,18 @@ export function initTables(app, supabase) {
             let cost = app.math.getCost(t);
             $('stop-table-id').innerText = id;
             $('stop-total-sum').innerText = cost.toLocaleString() + ' ₸';
-            $('stop-guest-name').value = t.active_check_id || `Гость ${id}`;
+            $('stop-guest-name').value = t.active_check_id === 'Гость' ? `Гость ${id}` : t.active_check_id;
             app.ui.openSidePanel('side-stop-table');
         },
 
         confirmStop: async () => {
             let id = parseInt($('stop-table-id').innerText);
-            let name = $('stop-guest-name').value.trim();
+            let name = $('stop-guest-name').value.trim() || `Гость ${id}`;
             let t = app.state.tables.find(x => x.id === id);
             let cost = app.math.getCost(t);
 
             await supabase.from('active_checks').insert([{
-                id: Date.now(), table_id: id.toString(), guest_name: name, time_amount: cost, total: cost, created_by: app.session.user.name
+                id: Date.now(), table_id: id.toString(), guest_name: name, time_amount: cost, total: cost, created_by: app.session.user.name, created_at: new Date().toISOString()
             }]);
 
             await supabase.from('tables').update({ 
@@ -88,19 +82,19 @@ export function initTables(app, supabase) {
 
             app.ui.closeSidePanel('side-stop-table');
             app.ui.toast(`Чек передан на кассу!`, 'success');
-            app.logActivity(`⏹ Остановка: Стол ${id} (${cost} ₸)`, 'stop');
+            app.logActivity(`Стоп Стол ${id}`, '⏹');
         },
 
         togglePause: async (id) => {
             let t = app.state.tables.find(x => x.id === id);
             if (t.paused) {
                 await supabase.from('tables').update({ paused: false, started_at: Date.now() }).eq('id', id);
-                app.logActivity(`▶ Продолжение: Стол ${id}`, 'start');
+                app.logActivity(`Игра Стол ${id}`, '▶');
             } else {
                 let ms = (t.accumulated_time || 0) + (Date.now() - t.started_at);
                 let cost = app.math.getCost(t);
                 await supabase.from('tables').update({ paused: true, accumulated_time: ms, accumulated_cost: cost, started_at: null }).eq('id', id);
-                app.logActivity(`⏸ Пауза: Стол ${id}`, 'pause');
+                app.logActivity(`Пауза Стол ${id}`, '⏸');
             }
         }
     };
