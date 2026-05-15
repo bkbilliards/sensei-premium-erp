@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENSEI ERP X | Premium Control Center</title>
+    <title>SENSEI ERP X | Premium Lounge</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,125 +11,99 @@
 <body>
     <div id="toast-container" class="toast-container"></div>
 
-    <div class="floating-dock hide-mobile no-print">
-        <button class="dock-btn bar-glow" title="Бар" onclick="app.ui.toast('Бар в разработке', 'warning')">🍹</button>
-        <button class="dock-btn debt-glow" title="Долг" onclick="app.ui.toast('Долги в разработке', 'warning')">📓</button>
-        <button class="dock-btn cash-glow" title="Расход" onclick="app.ui.toast('Расход в разработке', 'warning')">💸</button>
-        <button class="dock-btn danger-glow" title="Инцидент" onclick="app.ui.toast('Инцидент зафиксирован', 'danger')">⚠️</button>
-    </div>
-
     <div id="authScreen" class="auth-screen active">
         <div class="glass-card auth-card">
             <div class="logo-circle pulse-gold">S</div>
             <h1 class="brand-title gold-gradient">SENSEI</h1>
-            <p class="tagline">LIVE OPERATING SYSTEM</p>
+            <p class="tagline">PREMIUM OPERATING SYSTEM</p>
             <div class="input-group">
                 <label>СМЕНА / АВТОРИЗАЦИЯ</label>
-                <select id="staffSelect" class="cyber-input"><option>Загрузка...</option></select>
+                <select id="staffSelect" class="cyber-input"><option>Загрузка персонала...</option></select>
             </div>
             <div class="input-group">
                 <label>PIN-КОД</label>
                 <input type="password" id="pinInput" class="cyber-input text-center text-24" placeholder="••••" inputmode="numeric">
             </div>
-            <button type="button" id="btn-login" class="btn-primary big-btn mt-10 shadow-gold">ВХОД В СИСТЕМУ</button>
+            <button type="button" id="btn-login" class="btn-gold big-btn mt-10 shadow-gold">ВХОД В СИСТЕМУ</button>
         </div>
     </div>
 
     <div id="appScreen" class="hidden">
-        <header class="topbar glass-panel">
+        <header class="topbar glass-panel no-print">
             <div class="container topbar-container flex-between w-100">
                 <div class="brand-zone flex-row align-center gap-15">
                     <div class="brand gold-gradient">SENSEI</div>
-                    <div class="role-badge"><span id="userName" class="gold-text bold">---</span> • <span class="success-text">Онлайн</span></div>
+                    <div class="role-badge"><span id="userName" class="gold-text bold">---</span> • <span class="success-text" id="owner-status">ONLINE</span></div>
                 </div>
                 
-                <div class="stats-zone hide-mobile flex-row gap-30">
-                    <div class="stat-item flex-column text-right">
-                        <span class="muted-text text-10 letter-spacing">СТОЛЫ В ИГРЕ</span>
-                        <b id="head-active-tables" class="text-white text-14">0 / 6</b>
+                <div class="header-stats hide-mobile flex-row gap-30">
+                    <div class="stat-item">
+                        <span class="muted-text">КАССА (НАЛ)</span>
+                        <b id="head-cash" class="text-white">0 ₸</b>
                     </div>
-                    <div class="stat-item flex-column text-right">
-                        <span class="muted-text text-10 letter-spacing">ВЫРУЧКА LIVE</span>
-                        <b id="head-live-rev" class="gold-text text-14">0 ₸</b>
+                    <div class="stat-item">
+                        <span class="muted-text">QR-ОПЛАТЫ</span>
+                        <b id="head-qr" class="blue-text">0 ₸</b>
+                    </div>
+                    <div class="stat-item">
+                        <span class="muted-text">ДОЛГИ</span>
+                        <b id="head-debts" class="danger-text">0 ₸</b>
                     </div>
                 </div>
 
                 <div class="action-zone flex-row align-center gap-15">
-                    <div id="live-clock" class="text-white bold text-18">--:--</div>
-                    <button class="btn-secondary btn-sm" id="btn-logout">🚪 ВЫХОД</button>
+                    <div id="live-clock" class="text-white bold text-18 hide-mobile">--:--</div>
+                    <button class="btn-dark btn-sm" id="btn-logout">🚪 ВЫХОД</button>
                 </div>
             </div>
         </header>
 
-        <nav class="cyber-nav hide-mobile">
+        <nav class="cyber-nav hide-mobile no-print">
             <div class="container nav-container">
                 <button class="nav-btn active" data-tab="hall">🎱 ЗАЛ И ЧЕКИ</button>
-                <button class="nav-btn" data-tab="stock">📦 СКЛАД И БАР</button>
+                <button class="nav-btn" data-tab="stock">📦 СКЛАД</button>
                 <button class="nav-btn" data-tab="debts">📓 ДОЛГИ</button>
                 <button class="nav-btn" data-tab="crm">👥 КЛИЕНТЫ</button>
-                <button class="nav-btn" data-tab="cash">💵 КАССА</button>
-                <button class="nav-btn owner-only success-text" data-tab="acc" style="border-color:var(--success);">📈 БУХГАЛТЕРИЯ</button>
-                <button class="nav-btn owner-only gold-text" data-tab="owner" style="border-color:var(--gold);">👑 ХОЗЯИН</button>
+                <button class="nav-btn owner-only success-text" data-tab="acc">📈 БУХГАЛТЕРИЯ</button>
+                <button class="nav-btn owner-only gold-text" data-tab="owner">👑 ХОЗЯИН</button>
             </div>
         </nav>
 
         <main class="main-workspace container">
             <div id="tab-hall" class="tab-pane active grid-layout-hall">
-                
                 <div class="flex-column gap-20">
                     <div id="tablesGrid" class="map-view-container"></div>
                     
-                    <div class="glass-panel mt-20 p-20">
+                    <div class="glass-panel p-20">
                         <h3 class="gold-text text-14 mb-15 uppercase letter-spacing flex-between">
                             <span>💸 ОЖИДАЮТ ОПЛАТЫ</span>
                             <span class="badge badge-yellow" id="waiting-count">0</span>
                         </h3>
                         <div id="waiting-payments-list" class="flex-column gap-10">
-                            <div class="muted-text text-11 text-center py-10">Все счета оплачены</div>
+                            <div class="muted-text text-center py-10">Все счета закрыты</div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="live-feed-panel glass-panel">
-                    <h3 class="gold-text text-12 mb-15 uppercase letter-spacing flex-between">
-                        <span>📡 Live События</span>
-                        <span class="pulse-indicator"></span>
-                    </h3>
-                    <div id="activity-feed" class="activity-feed-list overflow-auto">
-                        <div class="muted-text text-11 text-center mt-20">Ожидание событий...</div>
-                    </div>
+                <div class="live-feed-panel glass-panel hide-mobile">
+                    <h3 class="gold-text text-12 mb-15 uppercase letter-spacing">📡 СОБЫТИЯ LIVE</h3>
+                    <div id="activity-feed" class="activity-feed-list"></div>
                 </div>
             </div>
             
-            <div id="tab-stock" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">СКЛАД В РАЗРАБОТКЕ</h2></div>
-            <div id="tab-debts" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ДОЛГИ В РАЗРАБОТКЕ</h2></div>
-            <div id="tab-crm" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">CRM В РАЗРАБОТКЕ</h2></div>
-            <div id="tab-cash" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">КАССА В РАЗРАБОТКЕ</h2></div>
-            <div id="tab-acc" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">БУХГАЛТЕРИЯ В РАЗРАБОТКЕ</h2></div>
-            <div id="tab-owner" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ХОЗЯИН В РАЗРАБОТКЕ</h2></div>
+            <div id="tab-stock" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">СКЛАД СКОРО</h2></div>
+            <div id="tab-debts" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ДОЛГИ СКОРО</h2></div>
+            <div id="tab-crm" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">CRM СКОРО</h2></div>
+            <div id="tab-acc" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">БУХГАЛТЕРИЯ СКОРО</h2></div>
+            <div id="tab-owner" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ПАНЕЛЬ ХОЗЯИНА СКОРО</h2></div>
         </main>
-    </div>
 
-    <div id="side-start-table" class="side-panel">
-        <div class="flex-between mb-30">
-            <h2 class="gold-text">ПУСК СТОЛА <span id="start-table-id"></span></h2>
-            <div class="modal-close" onclick="app.ui.closeSidePanel('side-start-table')">✕</div>
+        <div class="mobile-bottom-nav no-print">
+            <button class="m-nav-item active" data-tab="hall">🎱<span>ЗАЛ</span></button>
+            <button class="m-nav-item" data-tab="stock">📦<span>БАР</span></button>
+            <button class="m-nav-item" data-tab="debts">📓<span>ДОЛГ</span></button>
+            <button class="m-nav-item" data-tab="crm">👥<span>CRM</span></button>
         </div>
-        <div class="input-group">
-            <label>ИМЯ ГОСТЯ (необязательно)</label>
-            <input type="text" id="start-guest-name" class="cyber-input" placeholder="Например: Арман">
-        </div>
-        <div class="input-group">
-            <label>ИГРОКИ</label>
-            <div class="flex-row gap-10">
-                <button class="btn-secondary flex-1" onclick="app.tables.setPlayers(1, this)">1</button>
-                <button class="btn-primary flex-1 shadow-gold" onclick="app.tables.setPlayers(2, this)" id="btn-p2">2</button>
-                <button class="btn-secondary flex-1" onclick="app.tables.setPlayers(3, this)">3</button>
-                <button class="btn-secondary flex-1" onclick="app.tables.setPlayers(4, this)">4</button>
-            </div>
-            <input type="hidden" id="start-players" value="2">
-        </div>
-        <button onclick="app.tables.confirmStart()" class="btn-primary big-btn shadow-gold mt-auto mb-20">▶ НАЧАТЬ ИГРУ</button>
     </div>
 
     <div id="side-stop-table" class="side-panel">
@@ -137,16 +111,15 @@
             <h2 class="danger-text">ОСТАНОВКА СТОЛА <span id="stop-table-id"></span></h2>
             <div class="modal-close" onclick="app.ui.closeSidePanel('side-stop-table')">✕</div>
         </div>
-        <div class="glass-card mb-30 text-center" style="border-color: rgba(255, 69, 58, 0.3); background: rgba(255, 69, 58, 0.05);">
-            <div class="muted-text text-11 mb-10 letter-spacing">ВРЕМЯ ИГРЫ: <span id="stop-time-played" class="text-white"></span></div>
-            <div class="muted-text text-11 mb-10 letter-spacing">ИТОГО К ОПЛАТЕ:</div>
+        <div class="glass-card mb-30 text-center" style="background: rgba(255, 69, 58, 0.05);">
+            <div class="muted-text text-11 mb-10 uppercase">ИТОГО К ОПЛАТЕ:</div>
             <div class="huge-text gold-text" id="stop-total-sum">0 ₸</div>
         </div>
         <div class="input-group">
-            <label>ИМЯ (ДЛЯ ЧЕКА)</label>
+            <label>ИМЯ ДЛЯ ЧЕКА</label>
             <input type="text" id="stop-guest-name" class="cyber-input">
         </div>
-        <button onclick="app.tables.confirmStop()" class="btn-danger big-btn shadow-red mt-auto mb-20">■ ВЫСТАВИТЬ СЧЕТ</button>
+        <button onclick="app.tables.confirmStop()" class="btn-danger big-btn shadow-red mt-auto">ВЫСТАВИТЬ СЧЕТ</button>
     </div>
 
     <script type="module" src="js/app.js"></script>
