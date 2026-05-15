@@ -12,21 +12,18 @@ export function initTables(app, supabase) {
                 let cls = isPlaying ? (t.paused ? 'paused' : 'playing') : 'free';
                 let cost = isPlaying ? app.math.getCost(t) : 0;
                 
-                // КНОПКИ ДЛЯ СВОБОДНОГО СТОЛА
                 let btnsFree = `
-                    <button class="btn-gold flex-1" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
-                    <button class="btn-dark" style="width: 100px;" onclick="app.tables.openManage(${t.id})">⚙ МЕНЮ</button>`;
+                    <button class="btn-gold" style="flex: 3;" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
+                    <button class="btn-dark" style="flex: 1;" onclick="app.tables.openManage(${t.id})">⚙ МЕНЮ</button>`;
                 
-                // КНОПКИ ДЛЯ АКТИВНОГО СТОЛА (1 КЛИК)
                 let btnsActive = `
-                    <button class="btn-danger flex-1" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
-                    <button class="btn-dark" style="width: 50px;" onclick="app.ui.toast('Бар', 'warning')">🍹</button>
-                    <button class="btn-dark" style="width: 50px;" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶' : '⏸'}</button>
-                    <button class="btn-dark" style="width: 50px;" onclick="app.openReceipt(${t.id})">🧾</button>`;
+                    <button class="btn-danger" style="flex: 3;" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
+                    <button class="btn-dark" style="flex: 1;" onclick="app.tables.openManage(${t.id})">⚙ МЕНЮ</button>`;
 
                 return `
                 <div class="table-card ${cls}">
-                    <div class="table-cloth"></div> <div class="table-content">
+                    <div class="table-cloth"></div>
+                    <div class="table-content">
                         <div class="t-header">
                             <span class="t-num"><span class="t-status-dot"></span>🎱 СТОЛ ${t.id}</span>
                         </div>
@@ -83,7 +80,8 @@ export function initTables(app, supabase) {
             app.ui.openSidePanel('side-manage-table');
         },
 
-        togglePause: async (id) => {
+        togglePauseFromManage: async () => {
+            let id = parseInt($('manage-table-id').innerText);
             let t = app.state.tables.find(x => x.id === id);
             if (t.paused) {
                 await supabase.from('tables').update({ paused: false, started_at: Date.now() }).eq('id', id);
@@ -94,10 +92,6 @@ export function initTables(app, supabase) {
                 await supabase.from('tables').update({ paused: true, accumulated_time: ms, accumulated_cost: cost, started_at: null }).eq('id', id);
                 app.ui.toast(`Стол на паузе`, 'warning');
             }
-        },
-        togglePauseFromManage: () => {
-            let id = parseInt($('manage-table-id').innerText);
-            app.tables.togglePause(id);
             app.ui.closeSidePanel('side-manage-table');
         },
 
