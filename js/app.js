@@ -19,33 +19,29 @@ const app = {
         app.auth.checkSession();
         app.setupNavigation();
         
-        // Грузим тарифы
         const { data: settings } = await supabase.from('settings').select('*').single();
         if(settings) app.state.tariffs = settings;
 
-        // Грузим столы
         const { data: tables } = await supabase.from('tables').select('*').order('id');
         if(tables) {
             app.state.tables = tables;
             app.render();
         }
 
-        // ЖИВАЯ СИНХРОНИЗАЦИЯ СТОЛОВ
         supabase.channel('public:tables').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tables' }, payload => {
             const index = app.state.tables.findIndex(t => t.id === payload.new.id);
             if(index !== -1) app.state.tables[index] = payload.new;
             app.tables.render(); 
         }).subscribe();
 
-        // Часы и Таймеры
+        // Главный цикл (Часы, Таймеры, Аналитика)
         setInterval(() => {
             let clock = $('live-clock');
-            if (clock) clock.innerText = new Date().toLocaleTimeString('ru-RU');
+            if (clock) clock.innerText = new Date().toLocaleTimeString('ru-RU').slice(0,5);
             app.tick();
         }, 1000);
     },
 
-    // UX Инструменты (Тосты и Боковые панели)
     ui: {
         toast: (msg, type='success') => {
             const c = $('toast-container');
@@ -54,7 +50,7 @@ const app = {
             t.className = `toast toast-${type}`;
             t.innerHTML = msg;
             c.appendChild(t);
-            setTimeout(() => t.remove(), 4000);
+            setTimeout(() => t.remove(), 3000);
         },
         openSidePanel: (id) => { $(id).classList.add('active'); },
         closeSidePanel: (id) => { $(id).classList.remove('active'); }
@@ -66,7 +62,7 @@ const app = {
         const time = new Date().toLocaleTimeString('ru-RU').slice(0,5);
         const item = document.createElement('div');
         item.className = 'feed-item';
-        item.innerHTML = `<span class="gold-text mr-10">${time}</span> ${text}`;
+        item.innerHTML = `<span class="gold-text bold w-100" style="max-width:40px;">${time}</span> <span>${text}</span>`;
         feed.prepend(item);
     },
 
@@ -100,16 +96,31 @@ const app = {
 
     tick: () => {
         if (!app.session.isAuth) return;
+        
+        let activeTables = 0;
+        let liveRevenue = 0;
+
         app.state.tables.forEach(t => {
-            if (t.status === 'В ИГРЕ' && !t.paused) {
-                let ms = (t.accumulated_time || 0) + (Date.now() - t.started_at);
+            if (t.status === 'В ИГРЕ') {
+                activeTables++;
+                let ms = (t.accumulated_time || 0);
+                if (!t.paused) ms += (Date.now() - t.started_at);
+                
                 let cost = app.math.getCost(t);
+                liveRevenue += cost;
+
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
                 if (timerEl) timerEl.innerText = app.math.formatTime(ms);
-                if (sumEl) sumEl.innerText = cost + " ₸";
+                if (sumEl) sumEl.innerText = cost.toLocaleString() + " ₸";
             }
         });
+
+        // Обновляем аналитику в шапке
+        let hTables = $('head-active-tables');
+        let hRev = $('head-live-rev');
+        if (hTables) hTables.innerText = `${activeTables} / 6`;
+        if (hRev) hRev.innerText = liveRevenue.toLocaleString() + " ₸";
     },
 
     setupNavigation: () => {
