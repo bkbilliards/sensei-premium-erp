@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SENSEI ERP X | Premium Lounge</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=6.0">
+    <link rel="stylesheet" href="css/style.css?v=7.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -43,22 +43,22 @@
                     <div class="role-badge"><span id="userName" class="gold-text bold">---</span> • <span class="success-text" id="owner-status">ONLINE</span></div>
                 </div>
                 
-                <div class="header-stats hide-mobile flex-row gap-30">
-                    <div class="stat-item">
+                <div class="header-stats hide-mobile flex-row gap-40">
+                    <div class="stat-item flex-column text-right">
                         <span class="muted-text">КАССА (НАЛ)</span>
-                        <b id="head-cash" class="text-white">0 ₸</b>
+                        <b id="head-cash" class="text-white text-18">0 ₸</b>
                     </div>
-                    <div class="stat-item">
+                    <div class="stat-item flex-column text-right">
                         <span class="muted-text">QR-ОПЛАТЫ</span>
-                        <b id="head-qr" class="blue-text">0 ₸</b>
+                        <b id="head-qr" class="blue-text text-18">0 ₸</b>
                     </div>
-                    <div class="stat-item">
+                    <div class="stat-item flex-column text-right">
                         <span class="muted-text">ДОЛГИ</span>
-                        <b id="head-debts" class="danger-text">0 ₸</b>
+                        <b id="head-debts" class="danger-text text-18">0 ₸</b>
                     </div>
                 </div>
 
-                <div class="action-zone flex-row align-center gap-15">
+                <div class="action-zone flex-row align-center gap-20">
                     <div id="live-clock" class="text-white bold text-18 hide-mobile">--:--</div>
                     <button class="btn-dark btn-sm" id="btn-logout">🚪 ВЫХОД</button>
                 </div>
@@ -68,9 +68,10 @@
         <nav class="cyber-nav hide-mobile no-print">
             <div class="container nav-container">
                 <button class="nav-btn active" data-tab="hall">🎱 ЗАЛ И ЧЕКИ</button>
-                <button class="nav-btn" data-tab="stock">📦 СКЛАД</button>
+                <button class="nav-btn" data-tab="stock">📦 СКЛАД И БАР</button>
                 <button class="nav-btn" data-tab="debts">📓 ДОЛГИ</button>
                 <button class="nav-btn" data-tab="crm">👥 КЛИЕНТЫ</button>
+                <button class="nav-btn" data-tab="cash">💵 КАССА</button>
                 <button class="nav-btn owner-only success-text" data-tab="acc">📈 БУХГАЛТЕРИЯ</button>
                 <button class="nav-btn owner-only gold-text" data-tab="owner">👑 ХОЗЯИН</button>
             </div>
@@ -81,7 +82,7 @@
                 <div class="flex-column gap-20">
                     <div id="tablesGrid" class="map-view-container"></div>
                     
-                    <div class="glass-panel p-20">
+                    <div class="glass-panel p-20 mt-10">
                         <h3 class="gold-text text-14 mb-15 uppercase letter-spacing flex-between">
                             <span>💸 ОЖИДАЮТ ОПЛАТЫ</span>
                             <span class="badge badge-yellow" id="waiting-count">0</span>
@@ -101,6 +102,7 @@
             <div id="tab-stock" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">СКЛАД СКОРО</h2></div>
             <div id="tab-debts" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ДОЛГИ СКОРО</h2></div>
             <div id="tab-crm" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">CRM СКОРО</h2></div>
+            <div id="tab-cash" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">КАССА СКОРО</h2></div>
             <div id="tab-acc" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">БУХГАЛТЕРИЯ СКОРО</h2></div>
             <div id="tab-owner" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ПАНЕЛЬ ХОЗЯИНА СКОРО</h2></div>
         </main>
@@ -129,6 +131,6 @@
         <button onclick="app.tables.confirmStop()" class="btn-danger big-btn shadow-red mt-auto mb-20">ВЫСТАВИТЬ СЧЕТ</button>
     </div>
 
-    <script type="module" src="js/app.js?v=6.0"></script>
+    <script type="module" src="js/app.js?v=7.0"></script>
 </body>
 </html>
