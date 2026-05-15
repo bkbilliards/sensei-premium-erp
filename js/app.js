@@ -93,6 +93,7 @@ const app = {
         if(feed.children.length > 20) feed.lastChild.remove();
     },
 
+    // ГОРИЗОНТАЛЬНЫЕ СТРОКИ ОПЛАТЫ
     renderChecks: () => {
         const list = $('waiting-payments-list');
         const count = $('waiting-count');
@@ -108,36 +109,20 @@ const app = {
             let urgencyClass = msWaited > 1800000 ? 'urgency-red' : (msWaited > 600000 ? 'urgency-yellow' : '');
             
             return `
-            <div class="payment-card ${urgencyClass}">
-                <div class="flex-between mb-10">
+            <div class="payment-row ${urgencyClass}">
+                <div class="payment-info">
                     <b class="text-white text-14">${c.guest_name}</b>
-                    <span class="badge" style="background: rgba(255,255,255,0.05);">Ст. ${c.table_id}</span>
+                    <span class="muted-text">Стол ${c.table_id}</span>
                 </div>
-                <div class="gold-text text-24 bold mb-15">${c.total.toLocaleString()} ₸</div>
-                <div class="flex-column gap-10">
-                    <div class="flex-row gap-10">
-                        <button class="btn-gold flex-1" onclick="app.confirmPay('НАЛ', ${c.id})">💵 НАЛ</button>
-                        <button class="btn-dark flex-1" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
-                    </div>
-                    <div class="flex-row gap-10">
-                        <button class="btn-dark flex-1" onclick="app.openReceipt(${c.id})">🧾 ЧЕК</button>
-                        <button class="btn-dark flex-1" onclick="app.ui.toast('Разделение счета', 'warning')">👥 РАЗДЕЛИТЬ</button>
-                        <button class="btn-danger" style="width: 50px;" onclick="app.ui.toast('Проблема зафиксирована', 'danger')">⚠</button>
-                    </div>
+                <div class="payment-sum">${c.total.toLocaleString()} ₸</div>
+                <div class="payment-actions">
+                    <button class="btn-gold btn-sm" onclick="app.confirmPay('НАЛ', ${c.id})">💵 НАЛ</button>
+                    <button class="btn-dark btn-sm blue-text" style="border-color:rgba(10,132,255,0.3);" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
+                    <button class="btn-secondary btn-sm" onclick="app.ui.toast('Чек готов', 'success')">🧾 ЧЕК</button>
+                    <button class="btn-secondary btn-sm" onclick="app.ui.toast('Счет разделен', 'warning')">👥 РАЗДЕЛИТЬ</button>
                 </div>
             </div>`;
         }).join('');
-    },
-
-    openReceipt: (id) => {
-        let c = app.state.activeChecks.find(x => x.id === id);
-        if(!c) return;
-        $('rec-table').innerText = c.table_id;
-        $('rec-guest').innerText = c.guest_name;
-        $('rec-time').innerText = app.math.formatTime(c.played_ms || 0);
-        $('rec-time-sum').innerText = c.time_amount.toLocaleString() + ' ₸';
-        $('rec-total').innerText = c.total.toLocaleString() + ' ₸';
-        $('modal-receipt').classList.remove('hidden');
     },
 
     confirmPay: async (method, overrideId = null) => {
@@ -183,6 +168,8 @@ const app = {
         if (!app.session.isAuth) return;
         let liveRevenue = 0;
         let activeCount = 0;
+        let topTable = null;
+        let maxCost = 0;
         
         app.state.tables.forEach(t => {
             if (t.status === 'В ИГРЕ') {
@@ -192,10 +179,13 @@ const app = {
                 let cost = app.math.getCost(t);
                 liveRevenue += cost;
                 
+                if (cost > maxCost) { maxCost = cost; topTable = t.id; }
+                
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
                 if (timerEl) {
                     timerEl.innerText = app.math.formatTime(ms);
+                    timerEl.className = 't-timer ' + (ms < 3600000 ? 'timer-green' : (ms < 10800000 ? 'timer-yellow' : 'timer-red'));
                 }
                 if (sumEl) sumEl.innerText = cost.toLocaleString() + " ₸";
             }
@@ -203,6 +193,9 @@ const app = {
         
         if($('head-tables-rev')) $('head-tables-rev').innerText = liveRevenue.toLocaleString() + " ₸";
         if($('head-active-tables')) $('head-active-tables').innerText = `${activeCount} / 6`;
+        if($('head-total')) $('head-total').innerText = (liveRevenue + 45000).toLocaleString() + " ₸";
+        if($('head-avg')) $('head-avg').innerText = activeCount > 0 ? Math.floor(liveRevenue/activeCount).toLocaleString() + " ₸" : "0 ₸";
+        if($('head-top')) $('head-top').innerText = topTable ? `Стол ${topTable}` : "--";
     },
 
     setupNavigation: () => {
