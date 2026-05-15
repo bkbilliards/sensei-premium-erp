@@ -11,29 +11,30 @@ export function initTables(app, supabase) {
                 let isPlaying = t.status === 'В ИГРЕ';
                 let cls = isPlaying ? (t.paused ? 'paused' : 'playing') : 'free';
                 let cost = isPlaying ? app.math.getCost(t) : 0;
+                let statusText = isPlaying ? (t.paused ? 'Пауза' : 'В игре') : 'Свободен';
                 
-                // ЛОГИКА ERP: Разные кнопки для разных состояний
+                // ЛОГИКА ERP: Кнопки меняются от статуса
                 let btnsFree = `
                     <button class="btn-gold flex-1" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
-                    <button class="btn-dark" style="width: 60px;" onclick="app.ui.toast('Бронь стола', 'warning')">📅</button>
-                    <button class="btn-dark" style="width: 60px;" onclick="app.ui.toast('Настройки', 'warning')">⚙️</button>`;
+                    <button class="btn-dark" style="width: 60px;" onclick="app.ui.toast('Бронь', 'warning')">📅</button>
+                    <button class="btn-dark" style="width: 60px;" onclick="app.ui.toast('Настр', 'warning')">⚙️</button>`;
                 
                 let btnsActive = `
                     <button class="btn-danger flex-1" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
                     <button class="btn-dark" style="width: 50px;" onclick="app.ui.toast('Бар', 'warning')">🍹</button>
                     <button class="btn-dark" style="width: 50px;" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶' : '⏸'}</button>
-                    <button class="btn-dark" style="width: 50px;" onclick="app.ui.toast('Печать предчека', 'success')">🧾</button>`;
+                    <button class="btn-dark" style="width: 50px;" onclick="app.ui.toast('Чек', 'success')">🧾</button>`;
 
                 return `
                 <div class="table-card ${cls}">
                     <div class="flex-between mb-15">
-                        <span class="t-num">СТОЛ ${t.id}</span>
-                        <span class="t-timer" id="timer-${t.id}">${isPlaying ? '00:00' : '--:--'}</span>
+                        <span class="t-num"><span class="t-status-dot"></span>СТОЛ ${t.id}</span>
+                        <span class="t-timer" id="timer-${t.id}">${isPlaying ? '00:00:00' : '--:--:--'}</span>
                     </div>
                     
                     <div class="flex-between align-center mb-20" style="min-height: 40px;">
                         <div class="flex-column">
-                            <span class="t-cost" id="sum-${t.id}">${isPlaying ? cost + ' ₸' : (t.accumulated_cost ? t.accumulated_cost + ' ₸' : 'Свободен')}</span>
+                            <span class="t-cost" id="sum-${t.id}">${isPlaying ? cost + ' ₸' : (t.accumulated_cost ? t.accumulated_cost + ' ₸' : statusText)}</span>
                         </div>
                         ${isPlaying ? `
                         <div class="flex-column text-right gap-5">
