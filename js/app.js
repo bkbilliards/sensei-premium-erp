@@ -85,7 +85,6 @@ const app = {
         if(feed.children.length > 20) feed.lastChild.remove();
     },
 
-    // РЕНДЕР ЧЕКОВ (С КНОПКАМИ "ЧЕК" и "В ДОЛГ")
     renderChecks: () => {
         const list = $('waiting-payments-list');
         const count = $('waiting-count');
@@ -180,7 +179,6 @@ const app = {
         }
     },
 
-    // ЛОГИКА ЦВЕТА ТАЙМЕРА (URGENCY)
     tick: () => {
         if (!app.session.isAuth) return;
         let liveRevenue = 0;
@@ -188,16 +186,13 @@ const app = {
             if (t.status === 'В ИГРЕ') {
                 let ms = (t.accumulated_time || 0);
                 if (!t.paused) ms += (Date.now() - t.started_at);
-                
                 let cost = app.math.getCost(t);
                 liveRevenue += cost;
                 
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
-                
                 if (timerEl) {
                     timerEl.innerText = app.math.formatTime(ms);
-                    // Цвет таймера (До 1ч: зеленый, 1ч-3ч: желтый, 3ч+: красный)
                     timerEl.className = 't-timer ' + (ms < 3600000 ? 'timer-green' : (ms < 10800000 ? 'timer-yellow' : 'timer-red'));
                 }
                 if (sumEl) sumEl.innerText = cost.toLocaleString() + " ₸";
