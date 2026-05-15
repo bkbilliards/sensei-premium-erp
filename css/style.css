@@ -1,7 +1,7 @@
 :root { 
-    --bg-main: #090B0E; --bg-card: #11141A; 
+    --bg-main: #0D1117; --bg-card: #161B22; 
     --gold: #D4AF37; --gold-light: #F3E5AB; --white: #E0E0E0; --gray: #6B7280; 
-    --border: #2A2E37; 
+    --border: #30363D; 
     --success: #30D158; --danger: #FF453A; --warning: #FF9F0A; --blue: #0A84FF; --purple: #BF5AF2;
 }
 
@@ -17,19 +17,19 @@ body { background: var(--bg-main); color: var(--white); font-family: 'Montserrat
 /* УТИЛИТЫ */
 .text-10 { font-size: 10px; } .text-11 { font-size: 11px; } .text-12 { font-size: 12px; } .text-14 { font-size: 14px; } .text-18 { font-size: 18px; } .text-24 { font-size: 24px; } .huge-text { font-size: 38px; font-weight: 900; letter-spacing: -1px;}
 .bold { font-weight: 800; } .uppercase { text-transform: uppercase; } .letter-spacing { letter-spacing: 1px; }
-.mt-10 { margin-top: 10px; } .mb-10 { margin-bottom: 10px; } .mb-15 { margin-bottom: 15px; } .mb-20 { margin-bottom: 20px; } .mb-30 { margin-bottom: 30px; } .mb-40 { margin-bottom: 40px; } .mt-20 { margin-top: 20px; } .mt-40 { margin-top: 40px; } .mt-auto { margin-top: auto; } .py-10 { padding: 10px 0; } .p-20 { padding: 20px; } .py-15 { padding: 15px 0; }
-.m-0 { margin: 0; }
+.m-0 { margin: 0; } .ml-auto { margin-left: auto; }
+.mt-10 { margin-top: 10px; } .mb-5 { margin-bottom: 5px; } .mb-10 { margin-bottom: 10px; } .mb-15 { margin-bottom: 15px; } .mb-20 { margin-bottom: 20px; } .mb-30 { margin-bottom: 30px; } .mb-40 { margin-bottom: 40px; } .mt-20 { margin-top: 20px; } .mt-40 { margin-top: 40px; } .mt-auto { margin-top: auto; } .py-10 { padding: 10px 0; } .p-20 { padding: 20px; } .py-15 { padding: 15px 0; }
 .flex-row { display: flex; flex-direction: row; gap: 10px; flex-wrap: wrap; } .align-center { align-items: center; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
 .flex-column { display: flex; flex-direction: column; } .w-100 { width: 100%; } .flex-1 { flex: 1; } .gap-5 { gap: 5px; } .gap-10 { gap: 10px; } .gap-15 { gap: 15px; } .gap-20 { gap: 20px; } .gap-30 { gap: 30px; } .gap-40 { gap: 40px; }
 
-/* КНОПКИ (МАТОВЫЕ, СТРОГИЕ) */
+/* КНОПКИ (МАТОВЫЕ) */
 button { cursor: pointer; border-radius: 8px; font-weight: 800; font-size: 11px; text-transform: uppercase; transition: 0.1s; font-family: inherit; display: flex; align-items: center; justify-content: center; border: none; letter-spacing: 1px; }
 button:active { transform: scale(0.97); opacity: 0.9; }
 
 .btn-gold { background: var(--gold); color: #000; padding: 14px 20px; } 
 .btn-dark { background: #1C2028; color: var(--white); border: 1px solid var(--border); padding: 14px 20px; } 
-.btn-dark:hover { background: #252A34; }
+.btn-dark:hover { background: #252A34; border-color: #484F58;}
 .btn-danger { background: rgba(255, 69, 58, 0.1); border: 1px solid rgba(255, 69, 58, 0.3); color: var(--danger); padding: 14px 20px; } 
 .btn-danger:hover { background: var(--danger); color: #fff; }
 .btn-secondary { background: transparent; color: var(--gray); border: 1px solid transparent; padding: 12px 16px; }
@@ -60,15 +60,15 @@ button:active { transform: scale(0.97); opacity: 0.9; }
 
 /* GRID LAYOUT ЗАЛА */
 .grid-layout-hall { display: grid; grid-template-columns: 1fr 320px; gap: 30px; align-items: start; }
-.right-control-panel { position: sticky; top: 20px; display: flex; flex-direction: column; }
-.control-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.right-control-panel { position: sticky; top: 20px; display: flex; flex-direction: column; height: calc(100vh - 120px); overflow: hidden;}
+.control-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .action-btn { background: #090B0E; border: 1px solid var(--border); padding: 15px 10px; display: flex; flex-direction: column; gap: 10px; color: var(--white); border-radius: 8px; align-items: center;}
 .action-btn:hover { background: #1C2028; border-color: #30363D; }
 .action-btn .icon { font-size: 22px; }
 .danger-border { border-color: rgba(255,69,58,0.5); } .gold-border { border-color: rgba(212,175,55,0.5); }
 
 /* 🎱 БИЛЬЯРДНЫЙ СТОЛ (TOP-VIEW) */
-.map-view-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+.map-view-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 20px; }
 .table-card { background: #11141A; border: 2px solid #222630; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; transition: all 0.3s ease; position: relative; overflow: hidden; min-height: 220px;}
 .table-cloth { position: absolute; inset: 6px; border-radius: 10px; background: #0D1611; opacity: 0; transition: opacity 0.4s ease; pointer-events: none; z-index: 0; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); border: 1px solid rgba(48, 209, 88, 0.1);}
 .table-card.playing .table-cloth { opacity: 1; }
@@ -91,9 +91,12 @@ button:active { transform: scale(0.97); opacity: 0.9; }
 .t-meta { font-size: 10px; color: var(--gray); font-weight: 700; text-transform: uppercase; margin-bottom: 15px; display: flex; justify-content: center; gap: 15px;}
 .t-meta span { background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; }
 
-/* ГОРИЗОНТАЛЬНЫЕ СТРОКИ ОПЛАТЫ */
+/* ОПЛАТЫ И СТАТУСЫ */
 .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: 1px; display: inline-flex; align-items: center; justify-content: center;}
 .badge-yellow { background: rgba(255, 159, 10, 0.15); color: var(--warning); }
+.badge-green { background: rgba(48, 209, 88, 0.15); color: var(--success); border: 1px solid rgba(48, 209, 88, 0.3); }
+.badge-red { background: rgba(255, 69, 58, 0.15); color: var(--danger); border: 1px solid rgba(255, 69, 58, 0.3); }
+
 .payments-list { display: flex; flex-direction: column; gap: 8px; }
 .payment-row { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; gap: 15px; position: relative;}
 .payment-row::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 4px; border-radius: 8px 0 0 8px; background: var(--success); }
@@ -104,27 +107,29 @@ button:active { transform: scale(0.97); opacity: 0.9; }
 .payment-actions { display: flex; gap: 6px; flex: 1; justify-content: flex-end;}
 
 /* СТАТИСТИКА И АРХИВ (ФИНАНСЫ) */
-.archive-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
-.stat-card { padding: 20px; }
+.finance-kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
+.f-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; justify-content: center;}
+.f-card.f-main { background: rgba(212,175,55,0.05); border-color: rgba(212,175,55,0.3); }
+.f-title { font-size: 10px; color: var(--gray); font-weight: 800; text-transform: uppercase; margin-bottom: 8px;}
+.f-val { font-size: 22px; font-weight: 900; letter-spacing: -1px; }
+
 .archive-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;}
 .archive-table th { background: #1C2028; padding: 15px 20px; color: var(--gray); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800;}
-.archive-table td { padding: 15px 20px; border-bottom: 1px solid var(--border); color: var(--white); font-weight: 600;}
+.archive-table td { padding: 15px 20px; border-bottom: 1px solid var(--border); color: var(--white); font-weight: 600; cursor: pointer;}
 .archive-table tr:last-child td { border-bottom: none; }
-.archive-table tr:hover td { background: rgba(255,255,255,0.02); }
+.archive-table tr:hover td { background: rgba(255,255,255,0.05); }
+
 .pay-tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: 1px;}
 .pay-tag.nal { background: rgba(48, 209, 88, 0.1); color: var(--success); border: 1px solid rgba(48, 209, 88, 0.3);}
 .pay-tag.qr { background: rgba(10, 132, 255, 0.1); color: var(--blue); border: 1px solid rgba(10, 132, 255, 0.3);}
+.font-mono { font-family: 'JetBrains Mono', monospace; }
 
 /* МИНИ-МОДАЛЫ И ПАНЕЛИ */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 100000; display: flex; align-items: center; justify-content: center; }
-.receipt-card { width: 320px; background: #FFF; color: #000; font-family: 'JetBrains Mono', monospace; border-radius: 4px; padding: 25px; }
-.receipt-card .gold-text { color: #000 !important; font-weight: 900;}
-.receipt-card .muted-text { color: #666 !important; }
-.receipt-divider { border-bottom: 2px dashed #ccc; margin: 15px 0; }
-.receipt-line { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; font-weight: 700;}
-.receipt-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 900; margin-top: 10px; }
+.fast-pay-card { width: 340px; }
+.receipt-divider { border-bottom: 2px dashed #30363D; margin: 15px 0; }
 
-.side-panel { position: fixed; top: 0; right: -100%; width: 400px; height: 100vh; background: var(--bg-card); z-index: 2000; transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); padding: 30px; display: flex; flex-direction: column; border-left: 1px solid var(--border); box-shadow: -10px 0 50px rgba(0,0,0,0.5); }
+.side-panel { position: fixed; top: 0; right: -100%; width: 400px; height: 100vh; background: var(--bg-card); z-index: 2000; transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); padding: 30px; display: flex; flex-direction: column; border-left: 1px solid var(--border); box-shadow: -10px 0 50px rgba(0,0,0,0.8); }
 .side-panel.active { right: 0; }
 .modal-close { font-size: 24px; color: var(--gray); cursor: pointer; width: 40px; height: 40px; border-radius: 8px; background: #090B0E; display: flex; align-items: center; justify-content: center; transition: 0.2s;}
 .modal-close:hover { background: #1C2028; color: var(--white); }
@@ -139,21 +144,20 @@ button:active { transform: scale(0.97); opacity: 0.9; }
 .toast { background: var(--bg-card); border: 1px solid var(--border); color: var(--white); padding: 12px 25px; border-radius: 30px; font-size: 12px; font-weight: 800; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: toastUp 0.2s forwards; text-align: center;}
 @keyframes toastUp { from { transform: translate(-50%, 20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 
-/* МОБИЛКА (ОТДЕЛЬНЫЙ UX) */
+/* МОБИЛКА */
 .mobile-bottom-nav { display: none; }
 @media (max-width: 1000px) {
     .grid-layout-hall { grid-template-columns: 1fr; }
     .hide-mobile { display: none !important; }
     .side-panel { width: 100%; }
     .main-workspace { padding-bottom: 100px; padding-left: 10px; padding-right: 10px;}
-    .archive-stats-grid { grid-template-columns: 1fr 1fr; gap: 15px; }
-    .archive-table { display: block; overflow-x: auto; white-space: nowrap; }
+    .finance-kpi-grid { grid-template-columns: 1fr 1fr; }
     
     .map-view-container { grid-template-columns: 1fr; gap: 15px; } 
     .table-card { min-height: 240px; padding: 25px; }
     .t-timer { font-size: 42px; }
     .t-cost { font-size: 24px; }
-    button { font-size: 13px; padding: 18px 20px; }
+    button { font-size: 13px; padding: 18px 20px; } 
     
     .mobile-bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border); height: 75px; z-index: 1000; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); }
     .m-nav-item { background: none; border: none; color: var(--gray); display: flex; flex-direction: column; align-items: center; font-size: 24px; gap: 4px; padding: 0; width: auto; height: auto;}
@@ -164,12 +168,4 @@ button:active { transform: scale(0.97); opacity: 0.9; }
     .payment-info { flex-direction: row; justify-content: space-between; width: 100%; margin-bottom: 10px;}
     .payment-sum { text-align: left; font-size: 24px;}
     .payment-actions { width: 100%; justify-content: space-between; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;}
-}
-
-@media print {
-    body * { visibility: hidden; }
-    #modal-receipt, #modal-receipt * { visibility: visible; }
-    #modal-receipt { position: absolute; left: 0; top: 0; background: none; }
-    .receipt-card { box-shadow: none; width: 100%; padding: 0; margin: 0; }
-    .no-print { display: none !important; }
 }
