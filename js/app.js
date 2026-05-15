@@ -7,7 +7,7 @@ const $$ = s => document.querySelectorAll(s);
 
 const app = {
     session: session, loadSession: loadSession, saveSession: saveSession,
-    state: { tables: [], activeChecks: [], tariffs: { day_start: 10, day_end: 18, day_price: 2000, night_price: 3000 }, shiftStart: Date.now() },
+    state: { tables: [], activeChecks: [], archivedChecks: [], tariffs: { day_start: 10, day_end: 18, day_price: 2000, night_price: 3000 }, shiftStart: Date.now() },
 
     init: async () => {
         app.auth.checkSession();
@@ -23,6 +23,10 @@ const app = {
         const { data: checks } = await supabase.from('active_checks').select('*');
         if(checks) { app.state.activeChecks = checks; app.renderChecks(); }
 
+        const today = new Date().toISOString().split('T')[0];
+        const { data: archive } = await supabase.from('archived_checks').select('*').gte('closed_at', today).order('closed_at', { ascending: false });
+        if(archive) { app.state.archivedChecks = archive; app.renderArchive(); }
+
         supabase.channel('public:tables').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tables' }, payload => {
             const index = app.state.tables.findIndex(t => t.id === payload.new.id);
             if(index !== -1) app.state.tables[index] = payload.new;
@@ -33,6 +37,11 @@ const app = {
             supabase.from('active_checks').select('*').then(({data}) => {
                 if(data) { app.state.activeChecks = data; app.renderChecks(); }
             });
+        }).subscribe();
+
+        supabase.channel('public:archived_checks').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'archived_checks' }, payload => {
+            app.state.archivedChecks.unshift(payload.new);
+            app.renderArchive();
         }).subscribe();
 
         setInterval(() => {
@@ -83,17 +92,6 @@ const app = {
         $$('.overlay').forEach(p => p.classList.add('hidden'));
     },
 
-    logActivity: (text, icon) => {
-        const feed = $('activity-feed'); if(!feed) return;
-        const time = new Date().toLocaleTimeString('ru-RU').slice(0,5);
-        const item = document.createElement('div');
-        item.className = `feed-item`;
-        item.innerHTML = `<span class="feed-time">${time}</span> <span class="feed-icon">${icon}</span> <span class="text-white">${text}</span>`;
-        feed.prepend(item);
-        if(feed.children.length > 20) feed.lastChild.remove();
-    },
-
-    // ГОРИЗОНТАЛЬНЫЕ СТРОКИ ОПЛАТЫ
     renderChecks: () => {
         const list = $('waiting-payments-list');
         const count = $('waiting-count');
@@ -125,6 +123,45 @@ const app = {
         }).join('');
     },
 
+    renderArchive: () => {
+        const list = $('archive-list');
+        if (!list) return;
+
+        let totalSum = 0;
+        let cashSum = 0;
+        let qrSum = 0;
+
+        if (app.state.archivedChecks.length === 0) {
+            list.innerHTML = '<tr><td colspan="8" class="text-center py-15 muted-text">Чеков пока нет</td></tr>';
+        } else {
+            list.innerHTML = app.state.archivedChecks.map(c => {
+                totalSum += Number(c.total);
+                if (c.pay_method === 'НАЛ') cashSum += Number(c.total);
+                if (c.pay_method === 'QR') qrSum += Number(c.total);
+
+                let timeStr = new Date(c.closed_at).toLocaleTimeString('ru-RU').slice(0,5);
+                let tagClass = c.pay_method === 'НАЛ' ? 'nal' : 'qr';
+
+                return `
+                <tr>
+                    <td class="muted-text font-mono">${timeStr}</td>
+                    <td><b>Ст. ${c.table_id}</b></td>
+                    <td>${c.guest_name}</td>
+                    <td class="gold-text">${Number(c.time_amount).toLocaleString()} ₸</td>
+                    <td class="text-white">${Number(c.bar_amount).toLocaleString()} ₸</td>
+                    <td class="gold-text bold text-14">${Number(c.total).toLocaleString()} ₸</td>
+                    <td><span class="pay-tag ${tagClass}">${c.pay_method}</span></td>
+                    <td class="text-right muted-text">${c.created_by}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        if($('arch-total-sum')) $('arch-total-sum').innerText = totalSum.toLocaleString() + ' ₸';
+        if($('arch-cash-sum')) $('arch-cash-sum').innerText = cashSum.toLocaleString() + ' ₸';
+        if($('arch-qr-sum')) $('arch-qr-sum').innerText = qrSum.toLocaleString() + ' ₸';
+        if($('arch-count')) $('arch-count').innerText = app.state.archivedChecks.length;
+    },
+
     openReceipt: (id) => {
         let c = app.state.activeChecks.find(x => x.id === id);
         if(!c) {
@@ -149,23 +186,20 @@ const app = {
 
         app.ui.playSound('pay');
 
-        // 1. АРХИВИРУЕМ ЧЕК В СЕЙФ
         await supabase.from('archived_checks').insert([{
             id: checkToArchive.id,
             table_id: checkToArchive.table_id,
             guest_name: checkToArchive.guest_name,
             time_amount: checkToArchive.time_amount,
             total: checkToArchive.total,
-            pay_method: method, // НАЛ или QR
+            pay_method: method,
             created_by: checkToArchive.created_by
         }]);
 
-        // 2. УДАЛЯЕМ ИЗ ОЖИДАНИЯ
         await supabase.from('active_checks').delete().eq('id', id);
         
         app.closeModals();
-        app.ui.toast(`Оплата ${method} успешна`, 'success');
-        app.logActivity(`Оплата ${method}: ${checkToArchive.total} ₸`, '💳');
+        app.ui.toast(`Оплата ${method} проведена`, 'success');
     },
 
     math: {
@@ -218,7 +252,6 @@ const app = {
                 let sumEl = $(`sum-${t.id}`);
                 if (timerEl) {
                     timerEl.innerText = app.math.formatTime(ms);
-                    timerEl.className = 't-timer ' + (ms < 3600000 ? 'timer-green' : (ms < 10800000 ? 'timer-yellow' : 'timer-red'));
                 }
                 if (sumEl) sumEl.innerText = cost.toLocaleString() + " ₸";
             }
@@ -259,6 +292,7 @@ const app = {
             $$('.owner-only').forEach(el => { el.style.display = app.session.user.role === 'owner' ? 'inline-block' : 'none'; });
             app.tables.render();
             app.renderChecks();
+            app.renderArchive();
         }
     }
 };
