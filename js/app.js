@@ -23,7 +23,6 @@ const app = {
         const { data: checks } = await supabase.from('active_checks').select('*');
         if(checks) { app.state.activeChecks = checks; app.renderChecks(); }
 
-        // ЗАГРУЗКА АРХИВА
         const today = new Date().toISOString().split('T')[0];
         const { data: archive } = await supabase.from('archived_checks').select('*').gte('closed_at', today).order('closed_at', { ascending: false });
         if(archive) { app.state.archivedChecks = archive; app.renderArchive(); }
@@ -103,6 +102,7 @@ const app = {
         if(feed.children.length > 20) feed.lastChild.remove();
     },
 
+    // ГОРИЗОНТАЛЬНЫЕ СТРОКИ ОПЛАТЫ
     renderChecks: () => {
         const list = $('waiting-payments-list');
         const count = $('waiting-count');
@@ -126,7 +126,7 @@ const app = {
                 <div class="payment-sum">${c.total.toLocaleString()} ₸</div>
                 <div class="payment-actions">
                     <button class="btn-dark btn-sm success-text" onclick="app.confirmPay('НАЛ', ${c.id})">💵 НАЛ</button>
-                    <button class="btn-dark btn-sm blue-text" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
+                    <button class="btn-dark btn-sm blue-text" style="border-color:rgba(10,132,255,0.3);" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
                     <button class="btn-dark btn-sm" onclick="app.openReceipt(${c.id})">🧾 ЧЕК</button>
                     <button class="btn-dark btn-sm" onclick="app.ui.toast('Разделение счета', 'warning')">👥 РАЗДЕЛИТЬ</button>
                 </div>
@@ -134,7 +134,7 @@ const app = {
         }).join('');
     },
 
-    // РЕНДЕР АРХИВА (ФИНАНСЫ И ЛОГИКА АУДИТА)
+    // РЕНДЕР АРХИВА И ДАШБОРДА
     renderArchive: () => {
         const list = $('archive-list');
         if (!list) return;
@@ -153,7 +153,7 @@ const app = {
 
                 let timeStr = new Date(c.closed_at).toLocaleTimeString('ru-RU').slice(0,5);
                 let tagClass = c.pay_method === 'НАЛ' ? 'nal' : 'qr';
-                let dur = app.math.formatTime(c.played_ms || 0).slice(0,5); // Только ЧЧ:ММ
+                let dur = app.math.formatTime(c.played_ms || 0).slice(0,5);
 
                 return `
                 <tr onclick="app.openAuditModal(${c.id})">
@@ -172,6 +172,7 @@ const app = {
             }).join('');
         }
 
+        // Обновляем KPI Дашборд
         if($('f-total')) $('f-total').innerText = totalSum.toLocaleString() + ' ₸';
         if($('f-cash')) $('f-cash').innerText = cashSum.toLocaleString() + ' ₸';
         if($('f-qr')) $('f-qr').innerText = qrSum.toLocaleString() + ' ₸';
@@ -188,7 +189,7 @@ const app = {
         $('audit-total').innerText = c.total.toLocaleString() + ' ₸';
         $('audit-time').innerText = app.math.formatTime(c.played_ms || 0);
         $('audit-rent').innerText = c.time_amount.toLocaleString() + ' ₸';
-        $('audit-method').innerText = c.pay_method;
+        $('audit-method').innerText = '✅ ' + c.pay_method;
         $('audit-guest').innerText = c.guest_name;
         $('audit-admin').innerText = c.created_by;
         $('modal-audit').classList.remove('hidden');
@@ -269,8 +270,6 @@ const app = {
         if (!app.session.isAuth) return;
         let liveRevenue = 0;
         let activeCount = 0;
-        let topTable = null;
-        let maxCost = 0;
         
         app.state.tables.forEach(t => {
             if (t.status === 'В ИГРЕ') {
@@ -279,8 +278,6 @@ const app = {
                 if (!t.paused) ms += (Date.now() - t.started_at);
                 let cost = app.math.getCost(t);
                 liveRevenue += cost;
-                
-                if (cost > maxCost) { maxCost = cost; topTable = t.id; }
                 
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
@@ -294,15 +291,11 @@ const app = {
         
         if($('head-tables-rev')) $('head-tables-rev').innerText = liveRevenue.toLocaleString() + " ₸";
         if($('head-active-tables')) $('head-active-tables').innerText = `${activeCount} / 6`;
-        if($('head-total')) $('head-total').innerText = (liveRevenue).toLocaleString() + " ₸";
-        if($('head-avg')) $('head-avg').innerText = activeCount > 0 ? Math.floor(liveRevenue/activeCount).toLocaleString() + " ₸" : "0 ₸";
-        if($('head-top')) $('head-top').innerText = topTable ? `Стол ${topTable}` : "--";
     },
 
     setupNavigation: () => {
-        window.app.openAuditModal = app.openAuditModal; // Для доступа из HTML
+        window.app.openAuditModal = app.openAuditModal; 
         
-        // Главная навигация
         $$('.nav-btn, .m-nav-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const tabId = e.currentTarget.dataset.tab;
@@ -315,15 +308,16 @@ const app = {
             });
         });
 
-        // Внутренняя навигация в "УПРАВЛЕНИЕ КЛУБОМ"
+        // Навигация внутри вкладки УПРАВЛЕНИЯ
         $$('.sub-nav-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const subId = e.currentTarget.dataset.sub;
+                if (!subId) return;
                 $$('.sub-nav-btn').forEach(b => b.classList.remove('active'));
                 e.currentTarget.classList.add('active');
                 $$('.sub-pane').forEach(p => p.classList.add('hidden'));
-                let pane = $(`sub-${subId}`);
-                if (pane) pane.classList.remove('hidden');
+                let tab = $(`sub-${subId}`);
+                if (tab) tab.classList.remove('hidden');
             });
         });
 
