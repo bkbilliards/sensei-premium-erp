@@ -27,12 +27,11 @@ const app = {
         const { data: archive } = await supabase.from('archived_checks').select('*').gte('closed_at', today).order('closed_at', { ascending: false });
         if(archive) { app.state.archivedChecks = archive; app.renderArchive(); }
 
-        // Генерация моковых логов для оживления панели
+        // Генерация моковых логов
         setTimeout(() => {
             if($('finance-activity-feed') && $('finance-activity-feed').children.length === 0) {
                 app.logActivity('Оплата QR (4500 ₸) - Стол 2', '🟢');
                 setTimeout(() => app.logActivity('Стол 4 установлен на паузу', '🟡'), 1000);
-                setTimeout(() => app.logActivity('Отмена предчека - Стол 1', '🔴'), 2500);
             }
         }, 1000);
 
@@ -223,7 +222,8 @@ const app = {
         $('audit-table').innerText = 'СТОЛ ' + c.table_id;
         $('audit-total').innerText = c.total.toLocaleString() + ' ₸';
         $('audit-time').innerText = app.math.formatTime(c.played_ms || 0);
-        $('audit-rent').innerText = c.time_amount.toLocaleString() + ' ₸';
+        $('audit-rent').innerText = (c.time_amount || 0).toLocaleString() + ' ₸';
+        $('audit-bar').innerText = (c.bar_amount || 0).toLocaleString() + ' ₸';
         $('audit-method').innerText = '✅ ' + c.pay_method;
         $('audit-guest').innerText = c.guest_name;
         $('audit-admin').innerText = c.created_by;
@@ -235,12 +235,13 @@ const app = {
         if(!c) {
             let t = app.state.tables.find(x => x.id === id);
             if(!t || t.status !== 'В ИГРЕ') return;
-            c = { table_id: t.id, guest_name: t.active_check_id || 'Гость', played_ms: (t.accumulated_time || 0) + (Date.now() - t.started_at), time_amount: app.math.getCost(t), total: app.math.getCost(t) };
+            c = { table_id: t.id, guest_name: t.active_check_id || 'Гость', played_ms: (t.accumulated_time || 0) + (Date.now() - t.started_at), time_amount: app.math.getCost(t), bar_amount: t.bar_amount || 0, total: app.math.getCost(t) + (t.bar_amount || 0) };
         }
         $('rec-table').innerText = c.table_id;
         $('rec-guest').innerText = c.guest_name;
         $('rec-time').innerText = app.math.formatTime(c.played_ms || 0);
-        $('rec-time-sum').innerText = c.time_amount.toLocaleString() + ' ₸';
+        $('rec-time-sum').innerText = (c.time_amount || 0).toLocaleString() + ' ₸';
+        $('rec-bar').innerText = (c.bar_amount || 0).toLocaleString() + ' ₸';
         $('rec-total').innerText = c.total.toLocaleString() + ' ₸';
         $('modal-receipt').classList.remove('hidden');
     },
@@ -259,6 +260,7 @@ const app = {
             table_id: checkToArchive.table_id,
             guest_name: checkToArchive.guest_name,
             time_amount: checkToArchive.time_amount,
+            bar_amount: checkToArchive.bar_amount || 0,
             total: checkToArchive.total,
             pay_method: method,
             created_by: checkToArchive.created_by,
@@ -304,6 +306,7 @@ const app = {
     tick: () => {
         if (!app.session.isAuth) return;
         let liveRevenue = 0;
+        let liveBar = 0;
         let activeCount = 0;
         let topTable = null;
         let maxCost = 0;
@@ -313,10 +316,15 @@ const app = {
                 activeCount++;
                 let ms = (t.accumulated_time || 0);
                 if (!t.paused) ms += (Date.now() - t.started_at);
-                let cost = app.math.getCost(t);
-                liveRevenue += cost;
                 
-                if (cost > maxCost) { maxCost = cost; topTable = t.id; }
+                let rent = app.math.getCost(t);
+                let bar = t.bar_amount || 0;
+                let total = rent + bar;
+                
+                liveRevenue += rent;
+                liveBar += bar;
+                
+                if (total > maxCost) { maxCost = total; topTable = t.id; }
                 
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
@@ -324,20 +332,22 @@ const app = {
                     timerEl.innerText = app.math.formatTime(ms);
                     timerEl.className = 't-timer ' + (ms < 3600000 ? 'timer-green' : (ms < 10800000 ? 'timer-yellow' : 'timer-red'));
                 }
-                if (sumEl) sumEl.innerText = cost.toLocaleString() + " ₸";
+                if (sumEl) sumEl.innerText = total.toLocaleString() + " ₸";
             }
         });
         
         if($('head-tables-rev')) $('head-tables-rev').innerText = liveRevenue.toLocaleString() + " ₸";
+        if($('head-bar')) $('head-bar').innerText = liveBar.toLocaleString() + " ₸";
         if($('head-active-tables')) $('head-active-tables').innerText = `${activeCount} / 6`;
-        if($('head-total')) $('head-total').innerText = (liveRevenue).toLocaleString() + " ₸";
-        if($('head-avg')) $('head-avg').innerText = activeCount > 0 ? Math.floor(liveRevenue/activeCount).toLocaleString() + " ₸" : "0 ₸";
+        if($('head-total')) $('head-total').innerText = (liveRevenue + liveBar + 45000).toLocaleString() + " ₸"; // +45k mock archive
+        if($('head-avg')) $('head-avg').innerText = activeCount > 0 ? Math.floor((liveRevenue+liveBar)/activeCount).toLocaleString() + " ₸" : "0 ₸";
         if($('head-top')) $('head-top').innerText = topTable ? `Стол ${topTable}` : "--";
     },
 
     setupNavigation: () => {
         window.app.openAuditModal = app.openAuditModal; 
         
+        // Главная навигация
         $$('.nav-btn, .m-nav-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const tabId = e.currentTarget.dataset.tab;
@@ -346,6 +356,19 @@ const app = {
                 $$(`[data-tab="${tabId}"]`).forEach(b => b.classList.add('active'));
                 $$('.tab-pane').forEach(p => p.classList.add('hidden'));
                 let tab = $(`tab-${tabId}`);
+                if (tab) tab.classList.remove('hidden');
+            });
+        });
+
+        // Навигация внутри вкладки УПРАВЛЕНИЯ
+        $$('.sub-nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const subId = e.currentTarget.dataset.sub;
+                if (!subId) return;
+                $$('.sub-nav-btn').forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                $$('.sub-pane').forEach(p => p.classList.add('hidden'));
+                let tab = $(`sub-${subId}`);
                 if (tab) tab.classList.remove('hidden');
             });
         });
