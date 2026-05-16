@@ -13,7 +13,6 @@ export function initTables(app, supabase) {
                 let cost = isPlaying ? app.math.getCost(t) : 0;
                 let statusText = isPlaying ? (t.paused ? 'Пауза' : 'В игре') : 'Свободен';
                 
-                // ЧИСТЫЕ КНОПКИ. Никакого мусора.
                 let btnsFree = `
                     <button class="btn-gold" style="flex: 3;" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
                     <button class="btn-dark" style="flex: 1;" onclick="app.tables.openManage(${t.id})">⚙ МЕНЮ</button>`;
@@ -61,7 +60,7 @@ export function initTables(app, supabase) {
                 current_players: 2, active_check_id: `Гость`
             }).eq('id', id);
             app.ui.toast(`Стол ${id} запущен`, 'success');
-            app.logActivity(`Старт: Стол ${id}`, '▶');
+            app.logActivity(`Запущен Стол ${id}`, '🟢');
         },
 
         openManage: (id) => {
@@ -127,7 +126,7 @@ export function initTables(app, supabase) {
 
             app.ui.closeSidePanel('side-stop-table');
             app.ui.toast(`Счет передан на кассу`, 'success');
-            app.logActivity(`Остановлен: Стол ${id} (${cost} ₸)`, '⏹');
+            app.logActivity(`Остановлен: Стол ${id}`, '⏹');
         }
     };
 }
