@@ -12,7 +12,6 @@ export function initTables(app, supabase) {
                 let cls = isPlaying ? (t.paused ? 'paused' : 'playing') : 'free';
                 let cost = isPlaying ? app.math.getCost(t) : 0;
                 let bar = t.bar_amount || 0;
-                let statusText = isPlaying ? (t.paused ? 'Пауза' : 'В игре') : 'Свободен';
                 
                 let btnsFree = `
                     <button class="btn-gold" style="flex: 3;" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
