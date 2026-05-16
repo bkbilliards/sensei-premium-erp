@@ -17,27 +17,21 @@ const app = {
         const { data: settings } = await supabase.from('settings').select('*').single();
         if(settings) app.state.tariffs = settings;
 
-        // ЗАГРУЗКА БАЗЫ
         const { data: tables } = await supabase.from('tables').select('*').order('id');
         if(tables) { app.state.tables = tables; app.render(); }
 
         const { data: checks } = await supabase.from('active_checks').select('*');
         if(checks) { app.state.activeChecks = checks; app.renderChecks(); }
 
-        const today = new Date().toISOString().split('T')[0];
-        const { data: archive } = await supabase.from('archived_checks').select('*').gte('closed_at', today).order('closed_at', { ascending: false });
-        if(archive) { app.state.archivedChecks = archive; }
-
         // ЗАГРУЗКА СКЛАДА
         const { data: inv } = await supabase.from('inventory').select('*').eq('is_active', true).order('name');
         if(inv) { app.state.inventory = inv; app.pos.renderItems(); }
 
-        // ПОДПИСКИ
         supabase.channel('public:tables').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tables' }, payload => {
             const index = app.state.tables.findIndex(t => t.id === payload.new.id);
             if(index !== -1) app.state.tables[index] = payload.new;
             app.tables.render(); 
-            app.pos.updateTargetOptions(); // Обновить список столов в кассе
+            app.pos.updateTargetOptions(); 
         }).subscribe();
 
         supabase.channel('public:active_checks').on('postgres_changes', { event: '*', schema: 'public', table: 'active_checks' }, () => {
@@ -49,6 +43,14 @@ const app = {
         setInterval(() => {
             let clock = $('live-clock');
             if (clock) clock.innerText = new Date().toLocaleTimeString('ru-RU').slice(0,5);
+            
+            let shiftClock = $('shift-clock');
+            if (shiftClock && app.session.isAuth) {
+                let ms = Date.now() - app.state.shiftStart;
+                let h = Math.floor(ms / 3600000);
+                let m = Math.floor((ms % 3600000) / 60000);
+                shiftClock.innerText = `СМЕНА: ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+            }
             app.tick();
         }, 1000);
     },
@@ -86,7 +88,7 @@ const app = {
         $$('.overlay').forEach(p => p.classList.add('hidden'));
     },
 
-    // ЛОГИКА POS КАССЫ (БАР)
+    // ЛОГИКА POS КАССЫ (ПЛОТНАЯ СЕТКА)
     pos: {
         renderItems: () => {
             const grid = $('pos-items-grid');
@@ -94,22 +96,36 @@ const app = {
             if(app.state.inventory.length === 0) {
                 grid.innerHTML = '<div class="muted-text">Склад пуст</div>'; return;
             }
-            grid.innerHTML = app.state.inventory.map(item => `
-                <div class="pos-item" onclick="app.pos.addToCart(${item.id})">
+            grid.innerHTML = app.state.inventory.map(item => {
+                let stockClass = item.stock <= 0 ? 'danger' : (item.stock <= 5 ? 'warning' : 'success');
+                let stockText = item.stock <= 0 ? 'НЕТ' : item.stock;
+                let isOut = item.stock <= 0 ? 'out-of-stock' : '';
+                
+                // Простая иконка по категории
+                let icon = '🥤';
+                if(item.category === 'Снеки') icon = '🍫';
+                if(item.category === 'Кальян') icon = '💨';
+                if(item.category === 'Чай') icon = '🫖';
+
+                return `
+                <div class="pos-item ${isOut}" onclick="${item.stock > 0 ? `app.pos.addToCart(${item.id})` : ''}">
+                    <div class="item-badge ${stockClass}">${stockText} шт</div>
+                    <div class="item-icon">${icon}</div>
                     <div class="pos-item-name">${item.name}</div>
                     <div class="pos-item-price">${item.price} ₸</div>
-                    <div class="pos-item-stock mt-auto">Остаток: ${item.stock}</div>
-                </div>
-            `).join('');
+                    <div class="pos-add-btn">+ В КОРЗИНУ</div>
+                </div>`;
+            }).join('');
         },
 
         addToCart: (id) => {
             app.ui.playSound('start');
             let item = app.state.inventory.find(i => i.id === id);
-            if(!item) return;
+            if(!item || item.stock <= 0) return;
             let existing = app.state.cart.find(c => c.id === id);
             if(existing) {
-                existing.qty++;
+                if (existing.qty < item.stock) existing.qty++;
+                else app.ui.toast('Недостаточно на складе', 'danger');
             } else {
                 app.state.cart.push({ id: item.id, name: item.name, price: item.price, qty: 1 });
             }
@@ -119,6 +135,8 @@ const app = {
         changeQty: (id, delta) => {
             let index = app.state.cart.findIndex(c => c.id === id);
             if(index !== -1) {
+                let item = app.state.inventory.find(i => i.id === id);
+                if (delta > 0 && app.state.cart[index].qty >= item.stock) return app.ui.toast('Недостаточно на складе', 'danger');
                 app.state.cart[index].qty += delta;
                 if(app.state.cart[index].qty <= 0) app.state.cart.splice(index, 1);
                 app.pos.renderCart();
@@ -159,17 +177,13 @@ const app = {
             const select = $('pos-target');
             if(!select) return;
             let currentVal = select.value;
-            let html = '<option value="none">🧾 БЫСТРЫЙ ЧЕК (БАР)</option>';
+            let html = '<option value="none">📍 БЫСТРЫЙ ЧЕК (БАР)</option>';
             app.state.tables.forEach(t => {
                 if(t.status === 'В ИГРЕ') html += `<option value="${t.id}">🎱 СТОЛ ${t.id}</option>`;
             });
             select.innerHTML = html;
-            // Восстанавливаем выбор, если стол еще в игре
-            if(app.state.tables.find(t => t.id == currentVal && t.status === 'В ИГРЕ')) {
-                select.value = currentVal;
-            } else {
-                select.value = 'none';
-            }
+            if(app.state.tables.find(t => t.id == currentVal && t.status === 'В ИГРЕ')) select.value = currentVal;
+            else select.value = 'none';
             app.pos.updateTargetUI();
         },
 
@@ -184,49 +198,35 @@ const app = {
             }
         },
 
-        // Прямая продажа с бара
         checkout: async (method) => {
             if(app.state.cart.length === 0) return app.ui.toast('Корзина пуста', 'danger');
             let total = app.state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-            
             app.ui.playSound('pay');
             
-            // В реальной системе тут нужно списывать stock из inventory
-            // Упрощенно просто создаем чек в архиве
             await supabase.from('archived_checks').insert([{
-                id: Date.now(),
-                table_id: 'БАР',
-                guest_name: 'Гость бара',
-                time_amount: 0,
-                bar_amount: total,
-                total: total,
-                pay_method: method,
-                created_by: app.session.user.name
+                id: Date.now(), table_id: 'БАР', guest_name: 'Гость бара', time_amount: 0, bar_amount: total, total: total, pay_method: method, created_by: app.session.user.name
             }]);
 
-            app.ui.toast(`Продажа бара успешна (${method})`, 'success');
+            app.ui.toast(`Оплата ${method} успешна`, 'success');
             app.state.cart = [];
             app.pos.renderCart();
         },
 
-        // Добавление в счет стола
         sendToTable: async () => {
             let tableId = $('pos-target').value;
             if(tableId === 'none' || app.state.cart.length === 0) return;
-            
             let total = app.state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
             let t = app.state.tables.find(x => x.id == tableId);
             if(!t) return;
 
             let newBarSum = (t.bar_amount || 0) + total;
-            
             app.ui.playSound('start');
             await supabase.from('tables').update({ bar_amount: newBarSum }).eq('id', tableId);
             
-            app.ui.toast(`Добавлено на Стол ${tableId} (${total} ₸)`, 'success');
+            app.ui.toast(`Добавлено на Стол ${tableId}`, 'success');
             app.state.cart = [];
             app.pos.renderCart();
-            app.switchTab('hall'); // Возвращаемся в зал
+            app.switchTab('hall');
         }
     },
 
@@ -254,7 +254,7 @@ const app = {
                 <div class="payment-actions">
                     <button class="btn-dark btn-sm success-text" onclick="app.confirmPay('НАЛ', ${c.id})">💵 НАЛ</button>
                     <button class="btn-dark btn-sm blue-text" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
-                    <button class="btn-dark btn-sm" onclick="app.ui.toast('Чек в WhatsApp', 'success')">🧾 ЧЕК</button>
+                    <button class="btn-dark btn-sm" onclick="app.ui.toast('Чек готов', 'success')">🧾 ЧЕК</button>
                 </div>
             </div>`;
         }).join('');
@@ -263,26 +263,15 @@ const app = {
     confirmPay: async (method, overrideId = null) => {
         let id = overrideId || $('pay-check-id').value;
         if (!id) return;
-        
         let checkToArchive = app.state.activeChecks.find(c => c.id == id);
         if (!checkToArchive) return;
 
         app.ui.playSound('pay');
-
         await supabase.from('archived_checks').insert([{
-            id: checkToArchive.id,
-            table_id: checkToArchive.table_id,
-            guest_name: checkToArchive.guest_name,
-            time_amount: checkToArchive.time_amount,
-            bar_amount: checkToArchive.bar_amount || 0,
-            total: checkToArchive.total,
-            pay_method: method,
-            created_by: checkToArchive.created_by,
-            played_ms: checkToArchive.played_ms
+            id: checkToArchive.id, table_id: checkToArchive.table_id, guest_name: checkToArchive.guest_name, time_amount: checkToArchive.time_amount, bar_amount: checkToArchive.bar_amount, total: checkToArchive.total, pay_method: method, created_by: checkToArchive.created_by, played_ms: checkToArchive.played_ms
         }]);
 
         await supabase.from('active_checks').delete().eq('id', id);
-        
         app.closeModals();
         app.ui.toast(`Оплата ${method} проведена`, 'success');
     },
@@ -318,9 +307,7 @@ const app = {
 
     tick: () => {
         if (!app.session.isAuth) return;
-        let liveRevenue = 0;
-        let activeCount = 0;
-        let barTotal = 0;
+        let liveRevenue = 0; let liveBar = 0; let activeCount = 0;
         
         app.state.tables.forEach(t => {
             if (t.status === 'В ИГРЕ') {
@@ -331,23 +318,18 @@ const app = {
                 let rent = app.math.getCost(t);
                 let bar = t.bar_amount || 0;
                 let total = rent + bar;
-                
-                liveRevenue += rent;
-                barTotal += bar;
+                liveRevenue += rent; liveBar += bar;
                 
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
-                if (timerEl) {
-                    timerEl.innerText = app.math.formatTime(ms);
-                    timerEl.className = 't-timer ' + (ms < 3600000 ? 'timer-green' : (ms < 10800000 ? 'timer-yellow' : 'timer-red'));
-                }
+                if (timerEl) timerEl.innerText = app.math.formatTime(ms);
                 if (sumEl) sumEl.innerText = total.toLocaleString() + " ₸";
             }
         });
         
         if($('head-tables-rev')) $('head-tables-rev').innerText = liveRevenue.toLocaleString() + " ₸";
-        if($('head-bar')) $('head-bar').innerText = barTotal.toLocaleString() + " ₸";
-        if($('head-total')) $('head-total').innerText = (liveRevenue + barTotal).toLocaleString() + " ₸";
+        if($('head-bar')) $('head-bar').innerText = liveBar.toLocaleString() + " ₸";
+        if($('head-total')) $('head-total').innerText = (liveRevenue + liveBar).toLocaleString() + " ₸";
     },
 
     switchTab: (tabId) => {
@@ -356,15 +338,13 @@ const app = {
         $$('.tab-pane').forEach(p => p.classList.add('hidden'));
         let tab = $(`tab-${tabId}`);
         if (tab) tab.classList.remove('hidden');
-        if(tabId === 'stock' && app.pos) app.pos.updateTargetOptions(); // Обновляем селект в кассе
+        if(tabId === 'stock' && app.pos) app.pos.updateTargetOptions();
     },
 
     setupNavigation: () => {
         window.app.switchTab = app.switchTab;
         $$('.nav-btn, .m-nav-item').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                app.switchTab(e.currentTarget.dataset.tab);
-            });
+            btn.addEventListener('click', (e) => app.switchTab(e.currentTarget.dataset.tab));
         });
         if($('btn-logout')) $('btn-logout').onclick = () => app.auth.logout();
     },
@@ -379,10 +359,8 @@ const app = {
             $('appScreen').classList.remove('hidden');
             $('userName').innerText = app.session.user.name;
             if(!app.state.shiftStart) app.state.shiftStart = Date.now();
-            $$('.owner-only').forEach(el => { el.style.display = app.session.user.role === 'owner' ? 'inline-block' : 'none'; });
             app.tables.render();
             app.renderChecks();
-            app.pos.updateTargetOptions();
         }
     }
 };
