@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENSEI ERP X | Analytics Edition</title>
+    <title>SENSEI ERP X | Deep Audit</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=JetBrains+Mono:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=21.0">
+    <link rel="stylesheet" href="css/style.css?v=22.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -60,8 +60,7 @@
                     <button class="nav-btn" data-tab="stock">🍹 БАР И СКЛАД</button>
                     <button class="nav-btn" data-tab="debts">📓 ДОЛГИ</button>
                     <button class="nav-btn" data-tab="crm">👤 ГОСТИ (CRM)</button>
-                    <button class="nav-btn owner-only success-text" data-tab="acc">📈 ФИНАНСЫ И АРХИВ</button>
-                    <button class="nav-btn owner-only gold-text" data-tab="owner">👑 ХОЗЯИН</button>
+                    <button class="nav-btn owner-only success-text" data-tab="acc">📈 УПРАВЛЕНИЕ КЛУБОМ</button>
                 </div>
                 <button class="btn-dark btn-sm danger-text" id="btn-logout" style="border-color: rgba(255,69,58,0.3); font-size:11px; padding: 10px 20px;">⏹ ЗАКРЫТЬ СМЕНУ</button>
             </div>
@@ -110,20 +109,19 @@
             </div>
             
             <div id="tab-acc" class="tab-pane hidden flex-column h-100">
-                <div class="period-nav-bar mb-20 flex-between">
+                <div class="period-nav-bar mb-20 flex-between align-center">
                     <div class="flex-row gap-5">
                         <button class="p-btn active">СМЕНА</button>
                         <button class="p-btn">СЕГОДНЯ</button>
                         <button class="p-btn">НЕДЕЛЯ</button>
                         <button class="p-btn">МЕСЯЦ</button>
-                        <button class="p-btn">ГОД</button>
                         <button class="p-btn"><span class="icon text-12">📅</span> ПЕРИОД</button>
                     </div>
-                    <div class="flex-row gap-5 hide-mobile">
-                        <button class="m-btn">МАРТ</button>
-                        <button class="m-btn">АПРЕЛЬ</button>
-                        <button class="m-btn active">МАЙ</button>
-                        <button class="m-btn">ИЮНЬ</button>
+                    <div class="flex-row gap-10">
+                        <select class="cyber-input" style="height: 32px; font-size:11px; width: 140px; padding: 0 10px;">
+                            <option>👨‍💼 ВСЕ АДМИНЫ</option><option>Арман</option><option>Ержан</option>
+                        </select>
+                        <button class="btn-dark btn-sm success-text" onclick="app.ui.toast('Экспорт Excel...', 'success')"><span class="icon">📥</span> EXCEL</button>
                     </div>
                 </div>
 
@@ -138,12 +136,12 @@
                             <div class="f-card f-lg">
                                 <div class="f-title">ПРИБЫЛЬ</div>
                                 <div class="f-val success-text">0 ₸</div>
-                                <div class="f-compare success-text">↑ +12% к прошлой</div>
+                                <div class="f-compare success-text">↑ +12%</div>
                             </div>
-                            <div class="f-card f-lg">
+                            <div class="f-card f-lg alert-card">
                                 <div class="f-title">ДОЛГИ</div>
                                 <div class="f-val danger-text">0 ₸</div>
-                                <div class="f-compare danger-text">↑ +2 500 ₸</div>
+                                <div class="f-compare danger-text">⚠ Требует возврата</div>
                             </div>
                         </div>
 
@@ -155,61 +153,52 @@
                             <div class="f-card f-sm"><div class="f-title">🧾 ЧЕКОВ</div><div class="f-val text-white" id="f-count">0</div></div>
                         </div>
 
-                        <div class="charts-row mb-20 flex-row gap-20">
-                            <div class="glass-panel flex-1">
-                                <div class="muted-text mb-10 text-10">ВЫРУЧКА ПО ДНЯМ 📈</div>
-                                <div class="chart-mock"></div>
-                            </div>
-                            <div class="glass-panel flex-1">
-                                <div class="muted-text mb-10 text-10">ЗАГРУЗКА ЗАЛА 📊</div>
-                                <div class="chart-mock-bars"></div>
-                            </div>
+                        <div class="flex-between mb-10 mt-10 hide-mobile">
+                            <div class="gold-text text-12 uppercase bold">📜 АРХИВ ЧЕКОВ (ДЕСКТОП)</div>
                         </div>
-
-                        <div class="flex-between mb-10 mt-10">
-                            <div class="gold-text text-12 uppercase bold">📜 ИСТОРИЯ ЧЕКОВ И АУДИТ</div>
-                            <div class="flex-row gap-10">
-                                <button class="btn-secondary btn-sm"><span class="icon text-12">📥</span> EXCEL</button>
-                                <button class="btn-secondary btn-sm"><span class="icon text-12">✈️</span> ТЕЛЕГРАМ</button>
-                            </div>
-                        </div>
-                        <div class="glass-panel flex-1" style="padding: 0; overflow-x:auto;">
+                        <div class="glass-panel flex-1 hide-mobile" style="padding: 0; overflow-x:auto;">
                             <table class="archive-table w-100">
                                 <thead>
                                     <tr>
-                                        <th>Время</th><th>Стол</th><th>Гость</th><th>Игр.</th><th>Длит.</th><th>Аренда</th><th>Бар</th><th>Итого</th><th>Оплата</th><th>Статус</th><th class="text-right">Админ</th>
+                                        <th>Время</th><th>Стол</th><th>Гость</th><th>Длит.</th><th>Сумма</th><th>Оплата</th><th>Статус</th><th>Админ</th><th class="text-right">Действия</th>
                                     </tr>
                                 </thead>
                                 <tbody id="archive-list">
-                                    <tr><td colspan="11" class="text-center py-15 muted-text">Загрузка архива...</td></tr>
+                                    <tr><td colspan="9" class="text-center py-15 muted-text">Загрузка архива...</td></tr>
                                 </tbody>
                             </table>
+                        </div>
+
+                        <div class="hide-desktop mt-10">
+                            <div class="gold-text text-12 uppercase bold mb-10">📜 АРХИВ ЧЕКОВ (МОБИЛЬНЫЙ)</div>
+                            <div id="archive-mobile-list" class="flex-column gap-10">
+                                </div>
                         </div>
                     </div>
 
                     <div class="finance-side-col flex-column gap-15 hide-mobile">
                         <div class="glass-panel ai-card p-15">
                             <div class="flex-between mb-15">
-                                <span class="gold-text bold text-10 uppercase letter-spacing">🧠 SENSEI AI</span>
-                                <button class="btn-secondary btn-sm py-5">ПОДРОБНО</button>
+                                <span class="gold-text bold text-10 uppercase letter-spacing">🧠 AI АНАЛИТИКА</span>
+                                <button class="btn-secondary btn-sm py-5">ОТЧЕТ</button>
                             </div>
                             <div class="text-11 flex-column gap-8">
-                                <div class="flex-between"><span class="muted-text">Выручка</span><span class="success-text bold">↑ +18%</span></div>
-                                <div class="flex-between"><span class="muted-text">Топ стол</span><span class="text-white bold">№4</span></div>
-                                <div class="flex-between"><span class="muted-text">Топ товар</span><span class="text-white bold">RedBull</span></div>
-                                <div class="flex-between"><span class="muted-text">Лучший админ</span><span class="text-white bold">Ержан</span></div>
+                                <div class="flex-between"><span class="muted-text">Выручка:</span><span class="success-text bold">↑ +18%</span></div>
+                                <div class="flex-between"><span class="muted-text">Топ стол:</span><span class="text-white bold">№4</span></div>
+                                <div class="flex-between"><span class="muted-text">Топ товар:</span><span class="text-white bold">RedBull</span></div>
+                                <div class="flex-between"><span class="muted-text">Топ админ:</span><span class="text-white bold">Ержан</span></div>
                             </div>
                         </div>
 
                         <div class="glass-panel alert-card p-15">
                             <div class="flex-between mb-15">
-                                <span class="danger-text bold text-10 uppercase letter-spacing">🚨 ТРЕБУЕТ ВНИМАНИЯ</span>
-                                <button class="btn-secondary btn-sm py-5">ЖУРНАЛ</button>
+                                <span class="danger-text bold text-10 uppercase letter-spacing">🚨 АУДИТ ИНЦИДЕНТОВ</span>
+                                <button class="btn-secondary btn-sm py-5">ПОДРОБНО</button>
                             </div>
                             <div class="text-10 flex-column gap-8 bold">
-                                <div class="alert-row lvl-high">🔴 Удален товар (Cola)</div>
-                                <div class="alert-row lvl-med">🟡 Долг > 5000 ₸</div>
-                                <div class="alert-row lvl-low">🟢 Пауза > 15 мин</div>
+                                <div class="alert-row lvl-high">🔴 Удален товар (Cola) - Ержан</div>
+                                <div class="alert-row lvl-med">🟡 Долг > 5000 ₸ - Арман</div>
+                                <div class="alert-row lvl-low">🟢 Стол 4: ручная скидка 10%</div>
                             </div>
                         </div>
 
@@ -221,10 +210,9 @@
                 </div>
             </div>
 
-            <div id="tab-stock" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">РАЗДЕЛ БАР СКОРО</h2></div>
-            <div id="tab-debts" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">РАЗДЕЛ ДОЛГИ СКОРО</h2></div>
-            <div id="tab-crm" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">РАЗДЕЛ ГОСТИ СКОРО</h2></div>
-            <div id="tab-owner" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">ПАНЕЛЬ ХОЗЯИНА СКОРО</h2></div>
+            <div id="tab-stock" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">БАР И СКЛАД В РАЗРАБОТКЕ</h2></div>
+            <div id="tab-debts" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">РАЗДЕЛ ДОЛГИ В РАЗРАБОТКЕ</h2></div>
+            <div id="tab-crm" class="tab-pane hidden"><h2 class="gold-text text-center mt-40">РАЗДЕЛ ГОСТИ В РАЗРАБОТКЕ</h2></div>
         </main>
 
         <div class="mobile-bottom-nav no-print">
@@ -248,42 +236,6 @@
         </div>
     </div>
 
-    <div id="side-manage-table" class="side-panel">
-        <div class="flex-between mb-30">
-            <h2 class="gold-text">🎱 СТОЛ <span id="manage-table-id"></span></h2>
-            <div class="modal-close" onclick="app.ui.closeSidePanel('side-manage-table')">✕</div>
-        </div>
-        
-        <div class="glass-card mb-20 text-center" style="background: #0D1117;">
-            <div class="muted-text text-11 mb-5 uppercase letter-spacing">ТЕКУЩИЙ СТАТУС</div>
-            <div class="text-24 text-white bold mb-5" id="manage-timer">00:00:00</div>
-            <div class="text-18 gold-text bold" id="manage-cost">0 ₸</div>
-        </div>
-
-        <div class="muted-text mb-10 text-10">ДЕЙСТВИЯ СО СТОЛОМ</div>
-        
-        <div class="flex-column gap-10" id="manage-actions-active">
-            <button class="btn-dark py-15" onclick="app.ui.toast('Гость привязан', 'success')">👤 ПРИВЯЗАТЬ ГОСТЯ</button>
-            <div class="flex-row gap-10">
-                <button class="btn-dark flex-1" onclick="app.ui.toast('Меню бара', 'success')">🍹 БАР</button>
-                <button class="btn-dark flex-1" onclick="app.tables.togglePauseFromManage()">⏸ ПАУЗА</button>
-            </div>
-            <div class="flex-row gap-10">
-                <button class="btn-dark flex-1" onclick="app.ui.toast('Счет разделен', 'warning')">👥 РАЗДЕЛИТЬ</button>
-                <button class="btn-dark flex-1" onclick="app.ui.toast('Пересадка', 'warning')">🔄 ПЕРЕСАДИТЬ</button>
-            </div>
-            <button class="btn-dark py-15" onclick="app.ui.toast('История стола', 'success')">📜 ИСТОРИЯ ИГРЫ</button>
-            <button class="btn-dark py-15 danger-text" style="border-color: rgba(255,69,58,0.3);" onclick="app.ui.toast('Стол в тех. режиме', 'danger')">🛠 ТЕХНИЧЕСКИЙ РЕЖИМ</button>
-        </div>
-
-        <div class="flex-column gap-10 hidden" id="manage-actions-free">
-            <button class="btn-dark py-15" onclick="app.ui.toast('Стол забронирован', 'success')">📅 ДОБАВИТЬ БРОНЬ</button>
-            <button class="btn-dark py-15" onclick="app.ui.toast('Быстрый старт', 'success')">⚡ БЫСТРЫЙ СТАРТ</button>
-            <button class="btn-dark py-15 blue-text" style="border-color:rgba(10,132,255,0.3);" onclick="app.ui.toast('Уборка начата', 'warning')">🧹 УБОРКА СТОЛА</button>
-            <button class="btn-dark py-15 danger-text" style="border-color:rgba(255,69,58,0.3);" onclick="app.ui.toast('Стол закрыт', 'danger')">🛠 ТЕХНИЧЕСКИЙ РЕЖИМ</button>
-        </div>
-    </div>
-
     <div id="side-stop-table" class="side-panel">
         <div class="flex-between mb-30">
             <h2 class="danger-text">ЗАКРЫТЬ СТОЛ <span id="stop-table-id"></span></h2>
@@ -301,8 +253,8 @@
     </div>
 
     <div id="modal-audit" class="overlay hidden">
-        <div class="glass-card" style="width: 450px; padding: 0; overflow: hidden;">
-            <div class="flex-between p-20" style="background: #090B0E; border-bottom: 1px solid var(--border);">
+        <div class="glass-card" style="width: 450px; padding: 0; overflow: hidden; background: var(--bg-main);">
+            <div class="flex-between p-20" style="border-bottom: 1px solid var(--border);">
                 <h2 class="text-white text-14 m-0 uppercase">ДЕТАЛИ ЧЕКА <span class="gold-text" id="audit-id">#000</span></h2>
                 <div class="modal-close" onclick="app.closeModals()">✕</div>
             </div>
@@ -311,31 +263,19 @@
                     <div><div class="muted-text text-10">СТОЛ</div><div class="text-18 bold text-white" id="audit-table">--</div></div>
                     <div class="text-right"><div class="muted-text text-10">СУММА ИТОГО</div><div class="text-24 bold gold-text" id="audit-total">0 ₸</div></div>
                 </div>
-                
                 <div class="receipt-divider m-0"></div>
-                
                 <div>
                     <div class="muted-text text-10 mb-10">ДЕТАЛИЗАЦИЯ</div>
-                    <div class="flex-between mb-5"><span class="text-white text-12">Гость / Игроков</span><span class="text-white text-12"><span id="audit-guest"></span> / 2</span></div>
+                    <div class="flex-between mb-5"><span class="text-white text-12">Гость</span><span class="text-white text-12" id="audit-guest"></span></div>
                     <div class="flex-between mb-5"><span class="text-white text-12">Аренда (<span id="audit-time"></span>)</span><span class="text-white text-12" id="audit-rent">0 ₸</span></div>
-                    <div class="flex-between mb-5"><span class="text-white text-12">Бар (Товаров: 0)</span><span class="text-white text-12">0 ₸</span></div>
+                    <div class="flex-between mb-5"><span class="text-white text-12">Бар</span><span class="text-white text-12">0 ₸</span></div>
                     <div class="flex-between mt-10 pt-10" style="border-top: 1px dashed var(--border);"><span class="text-white text-12">Оплата</span><span class="badge badge-green" id="audit-method">--</span></div>
                     <div class="flex-between mt-5"><span class="text-white text-12">Кассир</span><span class="text-white text-12 muted-text" id="audit-admin">--</span></div>
                 </div>
-
-                <div class="receipt-divider m-0"></div>
-
-                <div>
-                    <div class="muted-text text-10 mb-10">ЖУРНАЛ ДЕЙСТВИЙ (ИСТОРИЯ СТОЛА)</div>
-                    <div class="activity-feed-list" id="audit-logs">
-                        <div class="feed-item"><span class="feed-time">--:--</span> <span class="text-white">Стол запущен</span></div>
-                        <div class="feed-item"><span class="feed-time">--:--</span> <span class="success-text">Оплата чека</span></div>
-                    </div>
-                </div>
             </div>
-            <div class="p-20 flex-row gap-10" style="border-top: 1px solid var(--border); background: #090B0E;">
-                <button class="btn-dark flex-1">🖨 ПЕЧАТЬ КОПИИ</button>
-                <button class="btn-danger flex-1" onclick="app.ui.toast('Нужны права Хозяина', 'danger')">❌ ВОЗВРАТ / ОТМЕНА</button>
+            <div class="p-20 flex-row gap-10" style="border-top: 1px solid var(--border);">
+                <button class="btn-dark flex-1">🖨 ПЕЧАТЬ</button>
+                <button class="btn-danger flex-1" onclick="app.ui.toast('Возврат заблокирован', 'danger')">❌ ВОЗВРАТ</button>
             </div>
         </div>
     </div>
@@ -363,6 +303,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/app.js?v=21.0"></script>
+    <script type="module" src="js/app.js?v=22.0"></script>
 </body>
 </html>
