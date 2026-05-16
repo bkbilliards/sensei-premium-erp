@@ -27,6 +27,15 @@ const app = {
         const { data: archive } = await supabase.from('archived_checks').select('*').gte('closed_at', today).order('closed_at', { ascending: false });
         if(archive) { app.state.archivedChecks = archive; app.renderArchive(); }
 
+        // Генерация моковых логов для оживления панели
+        setTimeout(() => {
+            if($('finance-activity-feed') && $('finance-activity-feed').children.length === 0) {
+                app.logActivity('Оплата QR (4500 ₸) - Стол 2', '🟢');
+                setTimeout(() => app.logActivity('Стол 4 установлен на паузу', '🟡'), 1000);
+                setTimeout(() => app.logActivity('Отмена предчека - Стол 1', '🔴'), 2500);
+            }
+        }, 1000);
+
         supabase.channel('public:tables').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tables' }, payload => {
             const index = app.state.tables.findIndex(t => t.id === payload.new.id);
             if(index !== -1) app.state.tables[index] = payload.new;
@@ -92,17 +101,20 @@ const app = {
         $$('.overlay').forEach(p => p.classList.add('hidden'));
     },
 
-    logActivity: (text, icon) => {
-        const feed = $('activity-feed'); if(!feed) return;
-        const time = new Date().toLocaleTimeString('ru-RU').slice(0,5);
-        const item = document.createElement('div');
-        item.className = `feed-item`;
-        item.innerHTML = `<span class="feed-time">${time}</span> <span class="feed-icon">${icon}</span> <span class="text-white">${text}</span>`;
-        feed.prepend(item);
-        if(feed.children.length > 20) feed.lastChild.remove();
+    logActivity: (text, icon = '⚪') => {
+        const createFeedItem = (listId) => {
+            const feed = $(listId); if(!feed) return;
+            const time = new Date().toLocaleTimeString('ru-RU').slice(0,5);
+            const item = document.createElement('div');
+            item.className = `feed-item`;
+            item.innerHTML = `<span class="feed-time">${time}</span> <span class="feed-icon">${icon}</span> <span class="text-white">${text}</span>`;
+            feed.prepend(item);
+            if(feed.children.length > 30) feed.lastChild.remove();
+        }
+        createFeedItem('activity-feed');
+        createFeedItem('finance-activity-feed');
     },
 
-    // ГОРИЗОНТАЛЬНЫЕ СТРОКИ ОПЛАТЫ
     renderChecks: () => {
         const list = $('waiting-payments-list');
         const count = $('waiting-count');
@@ -126,7 +138,7 @@ const app = {
                 <div class="payment-sum">${c.total.toLocaleString()} ₸</div>
                 <div class="payment-actions">
                     <button class="btn-dark btn-sm success-text" onclick="app.confirmPay('НАЛ', ${c.id})">💵 НАЛ</button>
-                    <button class="btn-dark btn-sm blue-text" style="border-color:rgba(10,132,255,0.3);" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
+                    <button class="btn-dark btn-sm blue-text" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
                     <button class="btn-dark btn-sm" onclick="app.openReceipt(${c.id})">🧾 ЧЕК</button>
                     <button class="btn-dark btn-sm" onclick="app.ui.toast('Разделение счета', 'warning')">👥 РАЗДЕЛИТЬ</button>
                 </div>
@@ -134,18 +146,22 @@ const app = {
         }).join('');
     },
 
-    // РЕНДЕР АРХИВА И ДАШБОРДА
     renderArchive: () => {
-        const list = $('archive-list');
-        if (!list) return;
+        const listDesktop = $('archive-list');
+        const listMobile = $('archive-mobile-list');
+        if (!listDesktop || !listMobile) return;
 
         let totalSum = 0; let cashSum = 0; let qrSum = 0;
         let barSum = 0; let rentSum = 0;
 
         if (app.state.archivedChecks.length === 0) {
-            list.innerHTML = '<tr><td colspan="10" class="text-center py-15 muted-text">Чеков пока нет</td></tr>';
+            listDesktop.innerHTML = '<tr><td colspan="10" class="text-center py-15 muted-text">Чеков пока нет</td></tr>';
+            listMobile.innerHTML = '<div class="muted-text text-center py-15">Чеков пока нет</div>';
         } else {
-            list.innerHTML = app.state.archivedChecks.map(c => {
+            let desktopHTML = '';
+            let mobileHTML = '';
+
+            app.state.archivedChecks.forEach(c => {
                 let total = Number(c.total); let bar = Number(c.bar_amount || 0); let rent = Number(c.time_amount || total);
                 totalSum += total; barSum += bar; rentSum += rent;
                 if (c.pay_method === 'НАЛ') cashSum += total;
@@ -155,12 +171,12 @@ const app = {
                 let tagClass = c.pay_method === 'НАЛ' ? 'nal' : 'qr';
                 let dur = app.math.formatTime(c.played_ms || 0).slice(0,5);
 
-                return `
+                // Desktop Row
+                desktopHTML += `
                 <tr onclick="app.openAuditModal(${c.id})">
                     <td class="muted-text font-mono">${timeStr}</td>
                     <td><b>Ст. ${c.table_id}</b></td>
                     <td>${c.guest_name}</td>
-                    <td class="muted-text text-center">2</td>
                     <td class="font-mono text-white">${dur}</td>
                     <td class="gray-text">${rent.toLocaleString()} ₸</td>
                     <td class="gray-text">${bar.toLocaleString()} ₸</td>
@@ -169,10 +185,29 @@ const app = {
                     <td><span class="badge badge-green">✅ Оплачено</span></td>
                     <td class="text-right muted-text">${c.created_by}</td>
                 </tr>`;
-            }).join('');
+
+                // Mobile Card
+                mobileHTML += `
+                <div class="arch-card-mob" onclick="app.openAuditModal(${c.id})">
+                    <div class="flex-between">
+                        <span class="badge" style="background: rgba(255,255,255,0.05); color: var(--gray);">🎱 Ст. ${c.table_id}</span>
+                        <span class="muted-text font-mono">${timeStr}</span>
+                    </div>
+                    <div class="flex-between align-center">
+                        <b class="text-white text-14">${c.guest_name}</b>
+                        <b class="gold-text text-18">${total.toLocaleString()} ₸</b>
+                    </div>
+                    <div class="flex-between mt-5">
+                        <span class="pay-tag ${tagClass}">${c.pay_method}</span>
+                        <span class="muted-text">${c.created_by}</span>
+                    </div>
+                </div>`;
+            });
+
+            listDesktop.innerHTML = desktopHTML;
+            listMobile.innerHTML = mobileHTML;
         }
 
-        // Обновляем KPI Дашборд
         if($('f-total')) $('f-total').innerText = totalSum.toLocaleString() + ' ₸';
         if($('f-cash')) $('f-cash').innerText = cashSum.toLocaleString() + ' ₸';
         if($('f-qr')) $('f-qr').innerText = qrSum.toLocaleString() + ' ₸';
@@ -234,7 +269,7 @@ const app = {
         
         app.closeModals();
         app.ui.toast(`Оплата ${method} проведена`, 'success');
-        app.logActivity(`Оплата чека (${method})`, '💳');
+        app.logActivity(`Оплата чека (${method})`, '🟢');
     },
 
     math: {
@@ -270,6 +305,8 @@ const app = {
         if (!app.session.isAuth) return;
         let liveRevenue = 0;
         let activeCount = 0;
+        let topTable = null;
+        let maxCost = 0;
         
         app.state.tables.forEach(t => {
             if (t.status === 'В ИГРЕ') {
@@ -278,6 +315,8 @@ const app = {
                 if (!t.paused) ms += (Date.now() - t.started_at);
                 let cost = app.math.getCost(t);
                 liveRevenue += cost;
+                
+                if (cost > maxCost) { maxCost = cost; topTable = t.id; }
                 
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
@@ -291,6 +330,9 @@ const app = {
         
         if($('head-tables-rev')) $('head-tables-rev').innerText = liveRevenue.toLocaleString() + " ₸";
         if($('head-active-tables')) $('head-active-tables').innerText = `${activeCount} / 6`;
+        if($('head-total')) $('head-total').innerText = (liveRevenue).toLocaleString() + " ₸";
+        if($('head-avg')) $('head-avg').innerText = activeCount > 0 ? Math.floor(liveRevenue/activeCount).toLocaleString() + " ₸" : "0 ₸";
+        if($('head-top')) $('head-top').innerText = topTable ? `Стол ${topTable}` : "--";
     },
 
     setupNavigation: () => {
@@ -304,19 +346,6 @@ const app = {
                 $$(`[data-tab="${tabId}"]`).forEach(b => b.classList.add('active'));
                 $$('.tab-pane').forEach(p => p.classList.add('hidden'));
                 let tab = $(`tab-${tabId}`);
-                if (tab) tab.classList.remove('hidden');
-            });
-        });
-
-        // Навигация внутри вкладки УПРАВЛЕНИЯ
-        $$('.sub-nav-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const subId = e.currentTarget.dataset.sub;
-                if (!subId) return;
-                $$('.sub-nav-btn').forEach(b => b.classList.remove('active'));
-                e.currentTarget.classList.add('active');
-                $$('.sub-pane').forEach(p => p.classList.add('hidden'));
-                let tab = $(`sub-${subId}`);
                 if (tab) tab.classList.remove('hidden');
             });
         });
