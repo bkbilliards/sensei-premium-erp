@@ -10,21 +10,17 @@ export function initTables(app, supabase) {
             grid.innerHTML = app.state.tables.sort((a,b)=>a.id-b.id).map(t => {
                 let isPlaying = t.status === 'В ИГРЕ';
                 let cls = isPlaying ? (t.paused ? 'paused' : 'playing') : 'free';
-                let rentCost = isPlaying ? app.math.getCost(t) : 0;
-                let barCost = t.bar_amount || 0;
-                let totalCost = rentCost + barCost;
-                let statusText = isPlaying ? (t.paused ? 'ПАУЗА' : 'В ИГРЕ') : 'СВОБОДЕН';
+                let cost = isPlaying ? app.math.getCost(t) : 0;
+                let bar = t.bar_amount || 0;
+                let statusText = isPlaying ? (t.paused ? 'Пауза' : 'В игре') : 'Свободен';
                 
-                // КНОПКИ (ИЕРАРХИЯ)
                 let btnsFree = `
-                    <button class="btn-gold" style="flex: 2;" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
+                    <button class="btn-gold" style="flex: 3;" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
                     <button class="btn-dark" style="flex: 1;" onclick="app.tables.openManage(${t.id})">⚙ МЕНЮ</button>`;
                 
                 let btnsActive = `
-                    <button class="btn-danger" style="flex: 2;" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
-                    <button class="btn-dark" style="flex: 1;" onclick="app.tables.openFastBar(${t.id})">🍹 БАР</button>
-                    <button class="btn-dark" style="width: 50px;" onclick="app.tables.togglePause(${t.id})">${t.paused ? '▶' : '⏸'}</button>
-                    <button class="btn-dark" style="width: 50px;" onclick="app.tables.openManage(${t.id})">⚙</button>`;
+                    <button class="btn-danger" style="flex: 3;" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
+                    <button class="btn-dark" style="flex: 1;" onclick="app.tables.openManage(${t.id})">⚙ МЕНЮ</button>`;
 
                 return `
                 <div class="table-card ${cls}">
@@ -37,16 +33,16 @@ export function initTables(app, supabase) {
                         <div class="t-center-info">
                             ${isPlaying ? `
                                 <div class="t-timer" id="timer-${t.id}">00:00:00</div>
-                                <div class="t-cost" id="sum-${t.id}">${totalCost} ₸</div>
+                                <div class="t-cost" id="sum-${t.id}">${cost + bar} ₸</div>
                             ` : `
-                                <div class="t-idle-text">${t.accumulated_cost ? t.accumulated_cost + ' ₸' : 'СВОБОДЕН'}</div>
+                                <div class="t-idle-text">СВОБОДЕН</div>
                             `}
                         </div>
 
                         ${isPlaying ? `
                             <div class="t-meta">
                                 <span>👤 ${t.active_check_id || 'Гость'}</span>
-                                ${barCost > 0 ? `<span style="background: rgba(212,175,55,0.15); color: var(--gold);">🍹 ${barCost} ₸</span>` : `<span>🍹 0 ₸</span>`}
+                                ${bar > 0 ? `<span style="background: rgba(197, 160, 47, 0.15); color: var(--gold);">🍹 БАР: ${bar} ₸</span>` : `<span>🍹 0 ₸</span>`}
                             </div>
                         ` : ''}
                         
@@ -65,7 +61,6 @@ export function initTables(app, supabase) {
                 current_players: 2, active_check_id: `Гость`
             }).eq('id', id);
             app.ui.toast(`Стол ${id} запущен`, 'success');
-            app.logActivity(`Запущен Стол ${id}`, '🟢');
         },
 
         openManage: (id) => {
@@ -76,10 +71,8 @@ export function initTables(app, supabase) {
                 $('manage-actions-active').classList.remove('hidden');
                 $('manage-actions-free').classList.add('hidden');
                 let ms = (t.accumulated_time || 0) + (Date.now() - t.started_at);
-                let rentCost = app.math.getCost(t);
-                let barCost = t.bar_amount || 0;
                 $('manage-timer').innerText = app.math.formatTime(ms);
-                $('manage-cost').innerText = (rentCost + barCost) + ' ₸';
+                $('manage-cost').innerText = (app.math.getCost(t) + (t.bar_amount || 0)) + ' ₸';
             } else {
                 $('manage-actions-active').classList.add('hidden');
                 $('manage-actions-free').classList.remove('hidden');
@@ -89,58 +82,39 @@ export function initTables(app, supabase) {
             app.ui.openSidePanel('side-manage-table');
         },
 
-        togglePause: async (id) => {
+        togglePauseFromManage: async () => {
+            let id = parseInt($('manage-table-id').innerText);
             let t = app.state.tables.find(x => x.id === id);
             if (t.paused) {
                 await supabase.from('tables').update({ paused: false, started_at: Date.now() }).eq('id', id);
                 app.ui.toast(`Игра продолжена`, 'success');
-                app.logActivity(`Продолжение: Стол ${id}`, '▶');
             } else {
                 let ms = (t.accumulated_time || 0) + (Date.now() - t.started_at);
                 let cost = app.math.getCost(t);
                 await supabase.from('tables').update({ paused: true, accumulated_time: ms, accumulated_cost: cost, started_at: null }).eq('id', id);
                 app.ui.toast(`Стол на паузе`, 'warning');
-                app.logActivity(`Пауза: Стол ${id}`, '⏸');
             }
-        },
-
-        togglePauseFromManage: () => {
-            let id = parseInt($('manage-table-id').innerText);
-            app.tables.togglePause(id);
             app.ui.closeSidePanel('side-manage-table');
         },
 
-        openFastBar: (id) => {
-            let t = app.state.tables.find(x => x.id === id);
-            $('bar-table-id').innerText = id;
-            $('bar-total-sum').innerText = (t.bar_amount || 0) + ' ₸';
-            app.ui.openSidePanel('side-fast-bar');
-        },
-
-        addBarItem: async (name, price) => {
-            let id = parseInt($('bar-table-id').innerText);
-            let t = app.state.tables.find(x => x.id === id);
-            let currentBar = t.bar_amount || 0;
-            let newBar = currentBar + price;
-            
-            app.ui.playSound('start');
-            await supabase.from('tables').update({ bar_amount: newBar }).eq('id', id);
-            
-            $('bar-total-sum').innerText = newBar + ' ₸';
-            app.ui.toast(`${name} добавлено`, 'success');
-            app.logActivity(`Добавлен ${name} (Стол ${id})`, '🍹');
+        openBarForTable: (id) => {
+            app.ui.closeSidePanel('side-manage-table');
+            app.switchTab('stock');
+            let select = $('pos-target');
+            if(select) {
+                select.value = id;
+                if(app.pos) app.pos.updateTargetUI();
+            }
         },
 
         openStopPanel: (id) => {
             let t = app.state.tables.find(x => x.id === id);
-            let rentCost = app.math.getCost(t);
-            let barCost = t.bar_amount || 0;
-            let total = rentCost + barCost;
-
+            let rent = app.math.getCost(t);
+            let bar = t.bar_amount || 0;
             $('stop-table-id').innerText = id;
-            $('stop-rent-sum').innerText = rentCost.toLocaleString() + ' ₸';
-            $('stop-bar-sum').innerText = barCost.toLocaleString() + ' ₸';
-            $('stop-total-sum').innerText = total.toLocaleString() + ' ₸';
+            $('stop-rent-sum').innerText = rent.toLocaleString() + ' ₸';
+            $('stop-bar-sum').innerText = bar.toLocaleString() + ' ₸';
+            $('stop-total-sum').innerText = (rent + bar).toLocaleString() + ' ₸';
             $('stop-guest-name').value = t.active_check_id === 'Гость' ? `Гость ${id}` : t.active_check_id;
             app.ui.openSidePanel('side-stop-table');
         },
@@ -149,14 +123,13 @@ export function initTables(app, supabase) {
             let id = parseInt($('stop-table-id').innerText);
             let name = $('stop-guest-name').value.trim() || `Гость ${id}`;
             let t = app.state.tables.find(x => x.id === id);
-            
-            let rentCost = app.math.getCost(t);
-            let barCost = t.bar_amount || 0;
-            let total = rentCost + barCost;
+            let rent = app.math.getCost(t);
+            let bar = t.bar_amount || 0;
+            let total = rent + bar;
             let playedMs = (t.accumulated_time || 0) + (Date.now() - t.started_at);
 
             await supabase.from('active_checks').insert([{
-                id: Date.now(), table_id: id.toString(), guest_name: name, time_amount: rentCost, bar_amount: barCost, total: total, created_by: app.session.user.name, 
+                id: Date.now(), table_id: id.toString(), guest_name: name, time_amount: rent, bar_amount: bar, total: total, created_by: app.session.user.name, 
                 created_at: new Date().toISOString(), played_ms: playedMs 
             }]);
 
@@ -166,7 +139,6 @@ export function initTables(app, supabase) {
 
             app.ui.closeSidePanel('side-stop-table');
             app.ui.toast(`Счет передан на кассу`, 'success');
-            app.logActivity(`Остановлен: Стол ${id}`, '⏹');
         }
     };
 }
