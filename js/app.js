@@ -7,26 +7,36 @@ const $$ = s => document.querySelectorAll(s);
 
 const app = {
     session: session, loadSession: loadSession, saveSession: saveSession,
-    state: { tables: [], activeChecks: [], archivedChecks: [], inventory: [], cart: [], tariffs: { day_start: 10, day_end: 18, day_price: 2000, night_price: 3000 }, shiftStart: Date.now() },
+    state: { tables: [], activeChecks: [], archivedChecks: [], inventory: [], cart: [], guests: [], debts: [], shiftStart: Date.now() },
 
     init: async () => {
         app.auth.checkSession();
         app.setupNavigation();
         app.setupHotkeys();
         
-        const { data: settings } = await supabase.from('settings').select('*').single();
-        if(settings) app.state.tariffs = settings;
-
         const { data: tables } = await supabase.from('tables').select('*').order('id');
         if(tables) { app.state.tables = tables; app.render(); }
 
         const { data: checks } = await supabase.from('active_checks').select('*');
         if(checks) { app.state.activeChecks = checks; app.renderChecks(); }
 
-        // ЗАГРУЗКА СКЛАДА
-        const { data: inv } = await supabase.from('inventory').select('*').eq('is_active', true).order('name');
-        if(inv) { app.state.inventory = inv; app.pos.renderItems(); }
+        const today = new Date().toISOString().split('T')[0];
+        const { data: archive } = await supabase.from('archived_checks').select('*').gte('closed_at', today).order('closed_at', { ascending: false });
+        if(archive) { app.state.archivedChecks = archive; app.renderArchive(); }
 
+        // СКЛАД И ЦЕНЫ
+        const { data: inv } = await supabase.from('inventory').select('*').eq('is_active', true).order('name');
+        if(inv) { app.state.inventory = inv; app.pos.renderItems(); app.inventory.render(); app.inventory.populateSelect(); }
+
+        // БАЗА ГОСТЕЙ (CRM)
+        const { data: guests } = await supabase.from('guests').select('*').order('name');
+        if(guests) { app.state.guests = guests; app.crm.render(); app.crm.populateDatalist(); }
+
+        // ДОЛГИ
+        const { data: debts } = await supabase.from('debts').select('*').eq('status', 'АКТИВЕН').order('created_at', { ascending: false });
+        if(debts) { app.state.debts = debts; app.debts.render(); }
+
+        // ПОДПИСКИ
         supabase.channel('public:tables').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tables' }, payload => {
             const index = app.state.tables.findIndex(t => t.id === payload.new.id);
             if(index !== -1) app.state.tables[index] = payload.new;
@@ -35,22 +45,16 @@ const app = {
         }).subscribe();
 
         supabase.channel('public:active_checks').on('postgres_changes', { event: '*', schema: 'public', table: 'active_checks' }, () => {
-            supabase.from('active_checks').select('*').then(({data}) => {
-                if(data) { app.state.activeChecks = data; app.renderChecks(); }
-            });
+            supabase.from('active_checks').select('*').then(({data}) => { if(data) { app.state.activeChecks = data; app.renderChecks(); } });
+        }).subscribe();
+
+        supabase.channel('public:archived_checks').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'archived_checks' }, payload => {
+            app.state.archivedChecks.unshift(payload.new); app.renderArchive();
         }).subscribe();
 
         setInterval(() => {
             let clock = $('live-clock');
             if (clock) clock.innerText = new Date().toLocaleTimeString('ru-RU').slice(0,5);
-            
-            let shiftClock = $('shift-clock');
-            if (shiftClock && app.session.isAuth) {
-                let ms = Date.now() - app.state.shiftStart;
-                let h = Math.floor(ms / 3600000);
-                let m = Math.floor((ms % 3600000) / 60000);
-                shiftClock.innerText = `СМЕНА: ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-            }
             app.tick();
         }, 1000);
     },
@@ -72,6 +76,7 @@ const app = {
         },
         openSidePanel: (id) => { $(id).classList.add('active'); },
         closeSidePanel: (id) => { $(id).classList.remove('active'); },
+        openModal: (id) => { $(id).classList.remove('hidden'); },
         playSound: (type) => {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -88,25 +93,20 @@ const app = {
         $$('.overlay').forEach(p => p.classList.add('hidden'));
     },
 
-    // ЛОГИКА POS КАССЫ (ПЛОТНАЯ СЕТКА)
+    // ЛОГИКА POS КАССЫ И БАРА
     pos: {
         renderItems: () => {
             const grid = $('pos-items-grid');
             if(!grid) return;
-            if(app.state.inventory.length === 0) {
-                grid.innerHTML = '<div class="muted-text">Склад пуст</div>'; return;
-            }
+            if(app.state.inventory.length === 0) { grid.innerHTML = '<div class="muted-text">Склад пуст</div>'; return; }
             grid.innerHTML = app.state.inventory.map(item => {
                 let stockClass = item.stock <= 0 ? 'danger' : (item.stock <= 5 ? 'warning' : 'success');
                 let stockText = item.stock <= 0 ? 'НЕТ' : item.stock;
                 let isOut = item.stock <= 0 ? 'out-of-stock' : '';
-                
-                // Простая иконка по категории
                 let icon = '🥤';
                 if(item.category === 'Снеки') icon = '🍫';
                 if(item.category === 'Кальян') icon = '💨';
                 if(item.category === 'Чай') icon = '🫖';
-
                 return `
                 <div class="pos-item ${isOut}" onclick="${item.stock > 0 ? `app.pos.addToCart(${item.id})` : ''}">
                     <div class="item-badge ${stockClass}">${stockText} шт</div>
@@ -127,7 +127,7 @@ const app = {
                 if (existing.qty < item.stock) existing.qty++;
                 else app.ui.toast('Недостаточно на складе', 'danger');
             } else {
-                app.state.cart.push({ id: item.id, name: item.name, price: item.price, qty: 1 });
+                app.state.cart.push({ id: item.id, name: item.name, price: item.price, qty: 1, cost_price: item.cost_price });
             }
             app.pos.renderCart();
         },
@@ -178,9 +178,7 @@ const app = {
             if(!select) return;
             let currentVal = select.value;
             let html = '<option value="none">📍 БЫСТРЫЙ ЧЕК (БАР)</option>';
-            app.state.tables.forEach(t => {
-                if(t.status === 'В ИГРЕ') html += `<option value="${t.id}">🎱 СТОЛ ${t.id}</option>`;
-            });
+            app.state.tables.forEach(t => { if(t.status === 'В ИГРЕ') html += `<option value="${t.id}">🎱 СТОЛ ${t.id}</option>`; });
             select.innerHTML = html;
             if(app.state.tables.find(t => t.id == currentVal && t.status === 'В ИГРЕ')) select.value = currentVal;
             else select.value = 'none';
@@ -201,15 +199,32 @@ const app = {
         checkout: async (method) => {
             if(app.state.cart.length === 0) return app.ui.toast('Корзина пуста', 'danger');
             let total = app.state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            let guest = $('pos-guest').value.trim() || 'Гость бара';
             app.ui.playSound('pay');
             
+            // Если ДОЛГ
+            if (method === 'ДОЛГ') {
+                await supabase.from('debts').insert([{ guest_name: guest, amount: total, created_by: app.session.user.name }]);
+            }
+
+            // АРХИВ
             await supabase.from('archived_checks').insert([{
-                id: Date.now(), table_id: 'БАР', guest_name: 'Гость бара', time_amount: 0, bar_amount: total, total: total, pay_method: method, created_by: app.session.user.name
+                id: Date.now(), table_id: 'БАР', guest_name: guest, time_amount: 0, bar_amount: total, total: total, pay_method: method, created_by: app.session.user.name
             }]);
+
+            // СПИСАНИЕ СО СКЛАДА
+            for(let item of app.state.cart) {
+                let dbItem = app.state.inventory.find(i => i.id === item.id);
+                if(dbItem) await supabase.from('inventory').update({stock: dbItem.stock - item.qty}).eq('id', item.id);
+            }
 
             app.ui.toast(`Оплата ${method} успешна`, 'success');
             app.state.cart = [];
             app.pos.renderCart();
+            
+            // Перезагрузка склада
+            const { data: inv } = await supabase.from('inventory').select('*').eq('is_active', true).order('name');
+            if(inv) { app.state.inventory = inv; app.pos.renderItems(); app.inventory.render(); }
         },
 
         sendToTable: async () => {
@@ -223,22 +238,143 @@ const app = {
             app.ui.playSound('start');
             await supabase.from('tables').update({ bar_amount: newBarSum }).eq('id', tableId);
             
+            // СПИСАНИЕ СО СКЛАДА
+            for(let item of app.state.cart) {
+                let dbItem = app.state.inventory.find(i => i.id === item.id);
+                if(dbItem) await supabase.from('inventory').update({stock: dbItem.stock - item.qty}).eq('id', item.id);
+            }
+            
             app.ui.toast(`Добавлено на Стол ${tableId}`, 'success');
             app.state.cart = [];
             app.pos.renderCart();
+            
+            const { data: inv } = await supabase.from('inventory').select('*').eq('is_active', true).order('name');
+            if(inv) { app.state.inventory = inv; app.pos.renderItems(); app.inventory.render(); }
             app.switchTab('hall');
         }
     },
 
+    // МОДУЛЬ ГОСТЕЙ (CRM)
+    crm: {
+        render: () => {
+            const list = $('crm-list');
+            if(!list) return;
+            if(app.state.guests.length === 0) { list.innerHTML = '<tr><td colspan="5" class="text-center py-15 muted-text">База пуста</td></tr>'; return; }
+            list.innerHTML = app.state.guests.map(g => {
+                let status = g.is_blacklisted ? '<span class="badge badge-red">🔴 ЧС</span>' : '<span class="badge badge-green">АКТИВЕН</span>';
+                return `<tr>
+                    <td><b>${g.name}</b></td>
+                    <td class="font-mono muted-text">${g.phone || '--'}</td>
+                    <td class="gold-text">${g.discount_percent}%</td>
+                    <td class="text-white">${Number(g.total_spent).toLocaleString()} ₸</td>
+                    <td class="text-right">${status}</td>
+                </tr>`;
+            }).join('');
+        },
+        populateDatalist: () => {
+            const dl = $('guest-datalist');
+            if(!dl) return;
+            dl.innerHTML = app.state.guests.map(g => `<option value="${g.name}">Скидка: ${g.discount_percent}%</option>`).join('');
+        },
+        addGuest: async () => {
+            let name = $('crm-name').value.trim();
+            let phone = $('crm-phone').value.trim();
+            let discount = parseInt($('crm-discount').value) || 0;
+            if(!name) return app.ui.toast('Введите имя!', 'danger');
+            
+            await supabase.from('guests').insert([{ name, phone, discount_percent: discount }]);
+            app.ui.toast('Гость добавлен', 'success');
+            app.closeModals();
+            
+            const { data: guests } = await supabase.from('guests').select('*').order('name');
+            if(guests) { app.state.guests = guests; app.crm.render(); app.crm.populateDatalist(); }
+        }
+    },
+
+    // МОДУЛЬ ДОЛГОВ
+    debts: {
+        render: () => {
+            const list = $('debts-list');
+            if(!list) return;
+            if(app.state.debts.length === 0) { list.innerHTML = '<tr><td colspan="5" class="text-center py-15 muted-text">Активных долгов нет</td></tr>'; return; }
+            list.innerHTML = app.state.debts.map(d => {
+                let dateStr = new Date(d.created_at).toLocaleDateString('ru-RU');
+                return `<tr>
+                    <td class="muted-text font-mono">${dateStr}</td>
+                    <td><b>${d.guest_name}</b></td>
+                    <td class="danger-text bold">${Number(d.amount).toLocaleString()} ₸</td>
+                    <td class="muted-text">${d.created_by}</td>
+                    <td class="text-right"><button class="btn-dark btn-sm success-text ml-auto" onclick="app.debts.payDebt(${d.id})">ПОГАСИТЬ</button></td>
+                </tr>`;
+            }).join('');
+            
+            let totalDebts = app.state.debts.reduce((sum, d) => sum + Number(d.amount), 0);
+            if($('head-debts')) $('head-debts').innerText = totalDebts.toLocaleString() + ' ₸';
+        },
+        payDebt: async (id) => {
+            app.ui.playSound('pay');
+            await supabase.from('debts').update({ status: 'ПОГАШЕН' }).eq('id', id);
+            app.ui.toast('Долг успешно погашен', 'success');
+            
+            const { data: debts } = await supabase.from('debts').select('*').eq('status', 'АКТИВЕН').order('created_at', { ascending: false });
+            app.state.debts = debts || [];
+            app.debts.render();
+        }
+    },
+
+    // МОДУЛЬ ИНВЕНТАРЯ И ЗАКУПОК
+    inventory: {
+        render: () => {
+            const list = $('inventory-list');
+            if(!list) return;
+            if(app.state.inventory.length === 0) { list.innerHTML = '<tr><td colspan="6" class="text-center py-15 muted-text">Склад пуст</td></tr>'; return; }
+            list.innerHTML = app.state.inventory.map(i => {
+                let stockClass = i.stock <= 0 ? 'danger-text' : (i.stock <= 5 ? 'warning-text' : 'success-text');
+                return `<tr>
+                    <td class="muted-text">${i.category}</td>
+                    <td><b>${i.name}</b></td>
+                    <td class="muted-text">${Number(i.cost_price).toLocaleString()} ₸</td>
+                    <td class="gold-text">${Number(i.price).toLocaleString()} ₸</td>
+                    <td class="${stockClass} bold">${i.stock} шт</td>
+                    <td class="text-right"><span class="badge ${i.stock <= 0 ? 'badge-red' : 'badge-green'}">${i.stock <= 0 ? 'ПУСТО' : 'В НАЛИЧИИ'}</span></td>
+                </tr>`;
+            }).join('');
+        },
+        populateSelect: () => {
+            const sel = $('pur-item');
+            if(!sel) return;
+            sel.innerHTML = app.state.inventory.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+        },
+        addPurchase: async () => {
+            let id = parseInt($('pur-item').value);
+            let qty = parseInt($('pur-qty').value);
+            let cost = parseFloat($('pur-cost').value);
+            if(!qty || qty <= 0 || !cost) return app.ui.toast('Заполните все поля!', 'danger');
+            
+            let item = app.state.inventory.find(i => i.id === id);
+            if(!item) return;
+
+            // Запись в журнал приходов
+            await supabase.from('purchases').insert([{ item_name: item.name, quantity: qty, cost_price: cost, created_by: app.session.user.name }]);
+            // Обновление остатков на складе (усреднение себестоимости в реальной ERP, здесь пока просто апдейт)
+            await supabase.from('inventory').update({ stock: item.stock + qty, cost_price: cost }).eq('id', id);
+            
+            app.ui.toast(`Оприходовано: ${item.name} (${qty} шт)`, 'success');
+            app.closeModals();
+            
+            // Перезагрузка
+            const { data: inv } = await supabase.from('inventory').select('*').eq('is_active', true).order('name');
+            if(inv) { app.state.inventory = inv; app.pos.renderItems(); app.inventory.render(); }
+        }
+    },
+
+    // КАССА АКТИВНЫХ ЧЕКОВ
     renderChecks: () => {
         const list = $('waiting-payments-list');
         const count = $('waiting-count');
         if (!list || !count) return;
         count.innerText = app.state.activeChecks.length;
-        if (app.state.activeChecks.length === 0) {
-            list.innerHTML = '<div class="muted-text py-10 w-100">Все счета оплачены</div>';
-            return;
-        }
+        if (app.state.activeChecks.length === 0) { list.innerHTML = '<div class="muted-text py-10 w-100">Все счета оплачены</div>'; return; }
         
         list.innerHTML = app.state.activeChecks.map(c => {
             let msWaited = Date.now() - new Date(c.created_at).getTime();
@@ -254,7 +390,7 @@ const app = {
                 <div class="payment-actions">
                     <button class="btn-dark btn-sm success-text" onclick="app.confirmPay('НАЛ', ${c.id})">💵 НАЛ</button>
                     <button class="btn-dark btn-sm blue-text" onclick="app.confirmPay('QR', ${c.id})">📱 QR</button>
-                    <button class="btn-dark btn-sm" onclick="app.ui.toast('Чек готов', 'success')">🧾 ЧЕК</button>
+                    <button class="btn-dark btn-sm danger-text" onclick="app.confirmPay('ДОЛГ', ${c.id})">💸 ДОЛГ</button>
                 </div>
             </div>`;
         }).join('');
@@ -267,6 +403,12 @@ const app = {
         if (!checkToArchive) return;
 
         app.ui.playSound('pay');
+
+        // ЕСЛИ ДОЛГ - ЗАКИДЫВАЕМ В ТАБЛИЦУ ДОЛГОВ
+        if (method === 'ДОЛГ') {
+            await supabase.from('debts').insert([{ guest_name: checkToArchive.guest_name || 'Гость', amount: checkToArchive.total, created_by: app.session.user.name }]);
+        }
+
         await supabase.from('archived_checks').insert([{
             id: checkToArchive.id, table_id: checkToArchive.table_id, guest_name: checkToArchive.guest_name, time_amount: checkToArchive.time_amount, bar_amount: checkToArchive.bar_amount, total: checkToArchive.total, pay_method: method, created_by: checkToArchive.created_by, played_ms: checkToArchive.played_ms
         }]);
@@ -274,6 +416,10 @@ const app = {
         await supabase.from('active_checks').delete().eq('id', id);
         app.closeModals();
         app.ui.toast(`Оплата ${method} проведена`, 'success');
+        
+        // Обновить список долгов если нужно
+        const { data: debts } = await supabase.from('debts').select('*').eq('status', 'АКТИВЕН').order('created_at', { ascending: false });
+        if(debts) { app.state.debts = debts; app.debts.render(); }
     },
 
     math: {
@@ -322,7 +468,10 @@ const app = {
                 
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
-                if (timerEl) timerEl.innerText = app.math.formatTime(ms);
+                if (timerEl) {
+                    timerEl.innerText = app.math.formatTime(ms);
+                    timerEl.className = 't-timer ' + (ms < 3600000 ? 'timer-green' : (ms < 10800000 ? 'timer-yellow' : 'timer-red'));
+                }
                 if (sumEl) sumEl.innerText = total.toLocaleString() + " ₸";
             }
         });
