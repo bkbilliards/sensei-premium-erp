@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENSEI ERP X | CRM & Inventory</title>
+    <title>SENSEI ERP X | Full POS</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=JetBrains+Mono:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=26.0">
+    <link rel="stylesheet" href="css/style.css?v=28.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="billiard-vibe">
@@ -242,9 +242,9 @@
         <div class="mobile-bottom-nav no-print">
             <button class="m-nav-item active" data-tab="hall">🎱<span>ЗАЛ</span></button>
             <button class="m-nav-item" data-tab="stock">🍹<span>БАР</span></button>
-            <button class="m-nav-item" data-tab="acc">📈<span>ФИНАНСЫ</span></button>
-            <button class="m-nav-item" data-tab="debts">📓<span>ДОЛГИ</span></button>
-            <button class="m-nav-item" data-tab="crm">👤<span>CRM</span></button>
+            <button class="m-nav-item" data-tab="acc">💵<span>КАССА</span></button>
+            <button class="m-nav-item" data-tab="inventory">📦<span>СКЛАД</span></button>
+            <button class="m-nav-item" data-tab="crm">👤<span>Я</span></button>
         </div>
     </div>
 
@@ -273,6 +273,40 @@
                 <button class="btn-secondary flex-1" onclick="app.closeModals()">ОТМЕНА</button>
                 <button class="btn-gold flex-1" onclick="app.crm.addGuest()">СОХРАНИТЬ</button>
             </div>
+        </div>
+    </div>
+
+    <div id="side-manage-table" class="side-panel">
+        <div class="flex-between mb-30">
+            <h2 class="gold-text">🎱 СТОЛ <span id="manage-table-id"></span></h2>
+            <div class="modal-close" onclick="app.ui.closeSidePanel('side-manage-table')">✕</div>
+        </div>
+        
+        <div class="glass-card mb-20 text-center" style="background: #0D1117;">
+            <div class="muted-text text-11 mb-5 uppercase letter-spacing">ТЕКУЩИЙ СТАТУС</div>
+            <div class="text-24 text-white bold mb-5" id="manage-timer">00:00:00</div>
+            <div class="text-18 gold-text bold" id="manage-cost">0 ₸</div>
+        </div>
+
+        <div class="muted-text mb-10 text-10">ДЕЙСТВИЯ СО СТОЛОМ</div>
+        
+        <div class="flex-column gap-10" id="manage-actions-active">
+            <button class="btn-dark py-15" onclick="app.ui.toast('Гость сел', 'warning')">👤 ПРИВЯЗАТЬ ГОСТЯ</button>
+            <div class="flex-row gap-10">
+                <button class="btn-dark flex-1" onclick="app.tables.openBarForTable(parseInt($('manage-table-id').innerText))">🍹 БАР</button>
+                <button class="btn-dark flex-1" onclick="app.tables.togglePauseFromManage()">⏸ ПАУЗА</button>
+            </div>
+            <div class="flex-row gap-10">
+                <button class="btn-dark flex-1" onclick="app.ui.toast('Счет разделен', 'warning')">👥 СПЛИТ</button>
+                <button class="btn-dark flex-1" onclick="app.ui.toast('Пересадка', 'warning')">🔄 ПЕРЕНОС</button>
+            </div>
+        </div>
+
+        <div class="flex-column gap-10 hidden" id="manage-actions-free">
+            <button class="btn-dark py-15" onclick="app.ui.toast('Бронь установлена', 'success')">📅 ДОБАВИТЬ БРОНЬ</button>
+            <button class="btn-dark py-15" onclick="app.tables.quickStart(parseInt($('manage-table-id').innerText)); app.ui.closeSidePanel('side-manage-table');">⚡ БЫСТРЫЙ СТАРТ</button>
+            <button class="btn-dark py-15 blue-text" style="border-color:rgba(10,132,255,0.3);" onclick="app.ui.toast('Уборка начата', 'warning')">🧹 УБОРКА СТОЛА</button>
+            <button class="btn-dark py-15 danger-text" style="border-color:rgba(255,69,58,0.3);" onclick="app.ui.toast('Стол закрыт', 'danger')">🛠 ТЕХНИЧЕСКИЙ РЕЖИМ</button>
         </div>
     </div>
 
@@ -311,6 +345,29 @@
         </div>
     </div>
 
-    <script type="module" src="js/app.js?v=26.0"></script>
+    <div id="modal-receipt" class="overlay hidden">
+        <div class="receipt-card">
+            <div class="text-center mb-15">
+                <h2 class="gold-text text-18 uppercase mb-5">SENSEI CLUB</h2>
+                <div class="muted-text text-10">ПРЕДВАРИТЕЛЬНЫЙ СЧЕТ</div>
+            </div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-line"><span>Стол:</span><span id="rec-table">--</span></div>
+            <div class="receipt-line"><span>Гость:</span><span id="rec-guest">--</span></div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-line"><span>Время игры:</span><span id="rec-time">--</span></div>
+            <div class="receipt-line"><span>Сумма игры:</span><span id="rec-time-sum">--</span></div>
+            <div class="receipt-line"><span>Бар:</span><span id="rec-bar">0 ₸</span></div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-total"><span>ИТОГО:</span><span id="rec-total" class="gold-text">0 ₸</span></div>
+            <div class="flex-row gap-10 mt-30 no-print">
+                <button class="btn-dark flex-1" onclick="app.ui.toast('Отправка WhatsApp...', 'success')">📲 WhatsApp</button>
+                <button class="btn-dark flex-1" onclick="window.print()">🖨️ Печать</button>
+            </div>
+            <button class="btn-secondary w-100 mt-10 no-print" onclick="app.closeModals()">ЗАКРЫТЬ</button>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js?v=28.0"></script>
 </body>
 </html>
