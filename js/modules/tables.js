@@ -12,6 +12,7 @@ export function initTables(app, supabase) {
                 let cls = isPlaying ? (t.paused ? 'paused' : 'playing') : 'free';
                 let cost = isPlaying ? app.math.getCost(t) : 0;
                 let bar = t.bar_amount || 0;
+                let statusText = isPlaying ? (t.paused ? 'Пауза' : 'В игре') : 'Свободен';
                 
                 let btnsFree = `
                     <button class="btn-gold" style="flex: 3;" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
@@ -57,7 +58,7 @@ export function initTables(app, supabase) {
             app.ui.playSound('start');
             await supabase.from('tables').update({ 
                 status: 'В ИГРЕ', started_at: Date.now(), accumulated_cost: 0, accumulated_time: 0, bar_amount: 0, paused: false,
-                current_players: 2, active_check_id: `Гость`
+                current_players: 2, active_check_id: ``
             }).eq('id', id);
             app.ui.toast(`Стол ${id} запущен`, 'success');
         },
@@ -100,10 +101,7 @@ export function initTables(app, supabase) {
             app.ui.closeSidePanel('side-manage-table');
             app.switchTab('stock');
             let select = $('pos-target');
-            if(select) {
-                select.value = id;
-                if(app.pos) app.pos.updateTargetUI();
-            }
+            if(select) { select.value = id; if(app.pos) app.pos.updateTargetUI(); }
         },
 
         openStopPanel: (id) => {
@@ -114,7 +112,7 @@ export function initTables(app, supabase) {
             $('stop-rent-sum').innerText = rent.toLocaleString() + ' ₸';
             $('stop-bar-sum').innerText = bar.toLocaleString() + ' ₸';
             $('stop-total-sum').innerText = (rent + bar).toLocaleString() + ' ₸';
-            $('stop-guest-name').value = t.active_check_id === 'Гость' ? `Гость ${id}` : t.active_check_id;
+            $('stop-guest-name').value = t.active_check_id || '';
             app.ui.openSidePanel('side-stop-table');
         },
 
