@@ -9,44 +9,47 @@ export function initTables(app, supabase) {
 
             grid.innerHTML = app.state.tables.sort((a,b)=>a.id-b.id).map(t => {
                 let isPlaying = t.status === 'В ИГРЕ';
-                let cls = isPlaying ? (t.paused ? 'paused' : 'playing') : 'free';
-                let cost = isPlaying ? app.math.getCost(t) : 0;
-                let bar = t.bar_amount || 0;
-                let statusText = isPlaying ? (t.paused ? 'Пауза' : 'В игре') : 'Свободен';
+                let isPaused = t.paused;
+                let cls = isPlaying ? (isPaused ? 'paused' : 'playing') : 'free';
+                let rentCost = isPlaying ? app.math.getCost(t) : 0;
+                let barCost = t.bar_amount || 0;
+                let totalCost = rentCost + barCost;
                 
+                // ЛОГИКА 1 КЛИКА: Кнопки зависят от статуса
                 let btnsFree = `
-                    <button class="btn-gold" style="flex: 3;" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
-                    <button class="btn-dark" style="flex: 1;" onclick="app.tables.openManage(${t.id})">⚙ МЕНЮ</button>`;
+                    <button class="btn-gold flex-1" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
+                    <button class="btn-dark" style="width: 50px;" onclick="app.ui.toast('Бронь', 'warning')">📅</button>
+                    <button class="btn-dark" style="width: 50px;" onclick="app.tables.openManage(${t.id})">⚙</button>`;
                 
                 let btnsActive = `
-                    <button class="btn-danger" style="flex: 3;" onclick="app.tables.openStopPanel(${t.id})">⏹ СТОП</button>
-                    <button class="btn-dark" style="flex: 1;" onclick="app.tables.openManage(${t.id})">⚙ МЕНЮ</button>`;
+                    <button class="btn-dark" style="width: 50px;" onclick="app.tables.togglePause(${t.id})">${isPaused ? '▶' : '⏸'}</button>
+                    <button class="btn-dark" style="flex: 1;" onclick="app.tables.openBarForTable(${t.id})">🍹 БАР</button>
+                    <button class="btn-danger" style="flex: 1;" onclick="app.tables.openStopPanel(${t.id})">💳 ОПЛАТА</button>
+                    <button class="btn-dark" style="width: 50px;" onclick="app.tables.openManage(${t.id})">⚙</button>`;
 
                 return `
                 <div class="table-card ${cls}">
                     <div class="table-cloth"></div>
-                    <div class="table-content">
-                        <div class="t-header">
-                            <span class="t-num"><span class="t-status-dot"></span>🎱 СТОЛ ${t.id}</span>
+                    <div class="table-content flex-column h-100">
+                        
+                        <div class="flex-between align-center mb-10">
+                            <span class="t-num"><span class="t-status-dot"></span>СТОЛ ${t.id}</span>
+                            ${isPlaying ? `<span class="badge" style="background: rgba(0,0,0,0.5);"><span class="icon text-10">👤</span> ${t.active_check_id || 'Гость'}</span>` : ''}
                         </div>
                         
-                        <div class="t-center-info">
+                        <div class="t-center-info my-auto">
                             ${isPlaying ? `
-                                <div class="t-timer" id="timer-${t.id}">00:00:00</div>
-                                <div class="t-cost" id="sum-${t.id}">${cost + bar} ₸</div>
+                                <div class="t-timer font-mono" id="timer-${t.id}">00:00:00</div>
+                                <div class="flex-row justify-center gap-10 mt-5">
+                                    <span class="t-cost gold-text font-mono">${totalCost.toLocaleString()} ₸</span>
+                                </div>
+                                ${barCost > 0 ? `<div class="muted-text text-10 mt-5">БАР: ${barCost.toLocaleString()} ₸</div>` : ''}
                             ` : `
-                                <div class="t-idle-text">СВОБОДЕН</div>
+                                <div class="t-idle-text muted-text">СВОБОДЕН</div>
                             `}
                         </div>
-
-                        ${isPlaying ? `
-                            <div class="t-meta">
-                                <span>👤 ${t.active_check_id || 'Гость'}</span>
-                                ${bar > 0 ? `<span style="background: rgba(197, 160, 47, 0.15); color: var(--gold);">🍹 БАР: ${bar} ₸</span>` : `<span>🍹 0 ₸</span>`}
-                            </div>
-                        ` : ''}
                         
-                        <div class="flex-row mt-auto">
+                        <div class="flex-row mt-auto pt-15" style="border-top: 1px solid rgba(255,255,255,0.05);">
                             ${isPlaying ? btnsActive : btnsFree}
                         </div>
                     </div>
@@ -58,9 +61,10 @@ export function initTables(app, supabase) {
             app.ui.playSound('start');
             await supabase.from('tables').update({ 
                 status: 'В ИГРЕ', started_at: Date.now(), accumulated_cost: 0, accumulated_time: 0, bar_amount: 0, paused: false,
-                current_players: 2, active_check_id: ``
+                current_players: 2, active_check_id: `Гость`
             }).eq('id', id);
             app.ui.toast(`Стол ${id} запущен`, 'success');
+            app.logActivity(`Запущен Стол ${id}`, '🟢');
         },
 
         openManage: (id) => {
@@ -82,23 +86,28 @@ export function initTables(app, supabase) {
             app.ui.openSidePanel('side-manage-table');
         },
 
-        togglePauseFromManage: async () => {
-            let id = parseInt($('manage-table-id').innerText);
+        togglePause: async (id) => {
             let t = app.state.tables.find(x => x.id === id);
             if (t.paused) {
                 await supabase.from('tables').update({ paused: false, started_at: Date.now() }).eq('id', id);
                 app.ui.toast(`Игра продолжена`, 'success');
+                app.logActivity(`Продолжение: Стол ${id}`, '▶');
             } else {
                 let ms = (t.accumulated_time || 0) + (Date.now() - t.started_at);
                 let cost = app.math.getCost(t);
                 await supabase.from('tables').update({ paused: true, accumulated_time: ms, accumulated_cost: cost, started_at: null }).eq('id', id);
                 app.ui.toast(`Стол на паузе`, 'warning');
+                app.logActivity(`Пауза: Стол ${id}`, '⏸');
             }
+        },
+
+        togglePauseFromManage: () => {
+            let id = parseInt($('manage-table-id').innerText);
+            app.tables.togglePause(id);
             app.ui.closeSidePanel('side-manage-table');
         },
 
         openBarForTable: (id) => {
-            app.ui.closeSidePanel('side-manage-table');
             app.switchTab('stock');
             let select = $('pos-target');
             if(select) { select.value = id; if(app.pos) app.pos.updateTargetUI(); }
@@ -135,7 +144,9 @@ export function initTables(app, supabase) {
             }).eq('id', id);
 
             app.ui.closeSidePanel('side-stop-table');
+            app.ui.playSound('pay');
             app.ui.toast(`Счет передан на кассу`, 'success');
+            app.logActivity(`Остановлен: Стол ${id}`, '⏹');
         }
     };
 }
