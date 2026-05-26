@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SENSEI ERP X | Enterprise OS</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=JetBrains+Mono:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=36.0">
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="billiard-vibe">
@@ -66,7 +66,6 @@
         </nav>
 
         <main class="main-workspace container flex-1">
-            
             <div id="tab-hall" class="tab-pane active grid-layout-hall h-100">
                 <div class="left-workspace flex-column gap-20">
                     <div id="tablesGrid" class="map-view-container"></div>
@@ -170,7 +169,7 @@
                     <button class="btn-gold flex-1" id="btn-m-bar">🍹 БАР</button>
                     <button class="btn-dark flex-1" id="btn-m-pause">⏸ ПАУЗА / ПУСК</button>
                 </div>
-                <button class="btn-danger w-100 py-15" id="btn-m-stop">⏹ ЗАКРЫТЬ СТОЛ (СЧЕТ)</button>
+                <button class="btn-danger w-100 py-15 mt-10" id="btn-m-stop">⏹ ЗАКРЫТЬ СТОЛ (СЧЕТ)</button>
             </div>
             <div class="flex-column gap-10 hidden" id="m-actions-free">
                 <button class="btn-gold py-15" id="btn-m-start">▶ ЗАПУСТИТЬ ИГРУ [SPACE]</button>
@@ -194,21 +193,20 @@
 
     <div id="modal-pay" class="overlay hidden">
         <div class="glass-card fast-pay-card" style="width: 360px;">
-            <h2 class="gold-text mb-20 text-center uppercase text-14">ОПЛАТА СЧЕТА</h2>
+            <h2 class="gold-text mb-20 text-center uppercase text-14">ОПЛАТА</h2>
             <div class="huge-text text-center text-white mb-30 font-mono" id="pay-sum">0 ₸</div>
             <input type="hidden" id="pay-check-id">
             <div class="flex-column gap-10">
                 <div class="flex-row gap-10">
-                    <button class="btn-dark flex-1 py-15 success-text" style="border-color: rgba(46,160,67,0.3);" id="btn-pay-nal">💵 НАЛ [F1]</button>
-                    <button class="btn-dark flex-1 py-15 blue-text" style="border-color: rgba(88,166,255,0.3);" id="btn-pay-qr">📱 QR [F2]</button>
-                    <button class="btn-dark flex-1 py-15 warning-text" style="border-color: rgba(210,153,34,0.3);" id="btn-pay-mix">🟡 MIX</button>
+                    <button class="btn-dark flex-1 py-15 success-text" style="border-color: rgba(46,160,67,0.3);" id="btn-pay-nal">💵 НАЛ</button>
+                    <button class="btn-dark flex-1 py-15 blue-text" style="border-color: rgba(88,166,255,0.3);" id="btn-pay-qr">📱 QR</button>
                 </div>
-                <button class="btn-dark w-100 py-15 danger-text" style="border-color: rgba(248,81,73,0.3);" id="btn-pay-debt">💸 В ДОЛГ [F3]</button>
+                <button class="btn-dark w-100 py-15 danger-text" style="border-color: rgba(248,81,73,0.3);" id="btn-pay-debt">💸 В ДОЛГ</button>
             </div>
             <button class="btn-secondary w-100 mt-20" id="btn-close-pay">ОТМЕНА (ESC)</button>
         </div>
     </div>
 
-    <script type="module" src="js/app.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
