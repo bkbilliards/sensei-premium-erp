@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENSEI ERP X | Enterprise Edition v32.0</title>
+    <title>SENSEI ERP X | Premium Live UX</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=JetBrains+Mono:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=32.0">
+    <link rel="stylesheet" href="css/style.css?v=33.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="billiard-vibe">
@@ -106,9 +106,6 @@
             <div id="tab-stock" class="tab-pane hidden flex-column h-100">
                 <div class="pos-layout h-100">
                     <div class="pos-main flex-column gap-15 h-100">
-                        <div class="flex-row gap-10">
-                            <span class="badge" style="background: rgba(212,175,55,0.08); color: var(--gold);">🔥 ХИТЫ: RedBull, Coca-Cola, Чай</span>
-                        </div>
                         <div class="flex-between align-center glass-panel" style="padding: 10px 15px;">
                             <div class="flex-row gap-5" id="pos-filter-buttons">
                                 <button class="btn-dark btn-sm active" data-cat="Все">ВСЕ ПОЗИЦИИ</button>
@@ -141,9 +138,9 @@
 
                             <div id="pos-actions-quick" class="flex-column gap-10">
                                 <div class="flex-row gap-10">
-                                    <button class="btn-dark flex-1 success-text py-15" style="border-color: rgba(46,160,67,0.3);" onclick="app.pos.checkout('НАЛ')">💵 НАЛ</button>
-                                    <button class="btn-dark flex-1 blue-text py-15" style="border-color: rgba(56,139,253,0.3);" onclick="app.pos.checkout('QR')">📱 QR</button>
-                                    <button class="btn-dark flex-1 danger-text py-15" style="border-color: rgba(248,81,73,0.3);" onclick="app.pos.checkout('ДОЛГ')">💸 ДОЛГ</button>
+                                    <button class="btn-dark flex-1 success-text py-15" style="border-color: rgba(46,160,67,0.3);" onclick="app.pos.checkout('НАЛ')">💵 НАЛ [F1]</button>
+                                    <button class="btn-dark flex-1 blue-text py-15" style="border-color: rgba(56,139,253,0.3);" onclick="app.pos.checkout('QR')">📱 QR [F2]</button>
+                                    <button class="btn-dark flex-1 danger-text py-15" style="border-color: rgba(248,81,73,0.3);" onclick="app.pos.checkout('ДОЛГ')">💸 ДОЛГ [F3]</button>
                                 </div>
                             </div>
 
@@ -248,11 +245,11 @@
                     <button class="btn-gold flex-1" onclick="app.tables.openBarForTable()">🍹 КАССА БАРА</button>
                     <button class="btn-dark flex-1" onclick="app.tables.pauseTableFromManage()">⏸ ПАУЗА / СТОП-ТАЙМ</button>
                 </div>
-                <button class="btn-danger w-100 py-15 mt-10" onclick="app.tables.openStopPanel()">StringTo СТОП (РАСЧЕТ СЧЕТА)</button>
+                <button class="btn-danger w-100 py-15 mt-10" onclick="app.tables.openStopPanel()">⏹ СТОП (РАСЧЕТ СЧЕТА)</button>
             </div>
 
             <div class="flex-column gap-10 hidden" id="m-actions-free">
-                <button class="btn-gold tyranny-btn py-15" onclick="app.tables.startTableFromManage()">▶ ЗАПУСТИТЬ ИГРУ [ВРЕМЯ]</button>
+                <button class="btn-gold py-15" onclick="app.tables.startTableFromManage()">▶ ЗАПУСТИТЬ ИГРУ [ПРОБЕЛ]</button>
                 <button class="btn-dark py-15" onclick="app.ui.toast('Резервирование сохранено', 'success')">📅 УСТАНОВИТЬ СТРОГУЮ БРОНЬ</button>
             </div>
         </div>
@@ -289,7 +286,7 @@
                     <button class="btn-dark flex-1 py-15 blue-text" style="border-color: rgba(88,166,255,0.3);" onclick="app.confirmPayActiveCheck('QR')">📱 QR [F2]</button>
                     <button class="btn-dark flex-1 py-15 warning-text" style="border-color: rgba(210,153,34,0.3);" onclick="app.confirmPayActiveCheck('MIX')">🟡 MIX</button>
                 </div>
-                <button class="btn-dark w-100 py-15 danger-text" style="border-color: rgba(248,81,73,0.3);" onclick="app.confirmPayActiveCheck('ДОЛГ')">💸 ОФОРМИТЬ ДЕБИТОРСКИЙ ДОЛГ</button>
+                <button class="btn-dark w-100 py-15 danger-text" style="border-color: rgba(248,81,73,0.3);" onclick="app.confirmPayActiveCheck('ДОЛГ')">💸 ОФОРМИТЬ ДЕБИТОРСКИЙ ДОЛГ [F3]</button>
             </div>
             <button class="btn-secondary w-100 mt-20" onclick="app.closeModals()">ВЕРНУТЬСЯ НАЗАД (ESC)</button>
         </div>
@@ -298,7 +295,7 @@
     <div id="modal-incident" class="overlay hidden">
         <div class="glass-card" style="width: 380px;">
             <div class="flex-between mb-20">
-                <h2 class="danger-text m-0">🚨 РЕГИСТРАЦИЯ НАРУШЕНИЯ / ПОРЧИ</h2>
+                <h2 class="danger-text m-0">🚨 РЕГИСТРАЦИЯ НАРУШЕНИЯ</h2>
                 <div class="modal-close" onclick="app.closeModals()">✕</div>
             </div>
             <div class="input-group">
@@ -318,34 +315,6 @@
         </div>
     </div>
 
-    <div id="modal-purchase" class="overlay hidden">
-        <div class="glass-card" style="width: 350px;">
-            <h2 class="gold-text mb-20 uppercase text-14">📦 ПРИХОДНЫЙ ОРДЕР СКЛАДА</h2>
-            <div class="input-group"><label>ПОЗИЦИЯ ИЗ КАТАЛОГА</label><select id="pur-item" class="cyber-input" style="height:40px;"></select></div>
-            <div class="flex-row gap-10">
-                <div class="input-group flex-1"><label>КОЛ-ВО (ШТ)</label><input type="number" id="pur-qty" class="cyber-input" style="height:40px;"></div>
-                <div class="input-group flex-1"><label>СЕБЕСТОИМОСТЬ ЕД.</label><input type="number" id="pur-cost" class="cyber-input" style="height:40px;"></div>
-            </div>
-            <div class="flex-row gap-10 mt-10">
-                <button class="btn-secondary flex-1" onclick="app.closeModals()">ОТМЕНА</button>
-                <button class="btn-gold flex-1" onclick="app.inventory.addPurchase()">УВЕЛИЧИТЬ ОСТАТОК</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-guest" class="overlay hidden">
-        <div class="glass-card" style="width: 350px;">
-            <h2 class="gold-text mb-20 uppercase text-14">👤 РЕГИСТРАЦИЯ КОНТРАГЕНТА В CRM</h2>
-            <div class="input-group"><label>ФИО ГОСТЯ / НАИМЕНОВАНИЕ</label><input type="text" id="crm-name" class="cyber-input" style="height:40px;"></div>
-            <div class="input-group"><label>ТЕЛЕФОННЫЙ НОМЕР</label><input type="text" id="crm-phone" class="cyber-input" style="height:40px;" placeholder="+7..."></div>
-            <div class="input-group"><label>ПЕРСОНАЛЬНЫЙ ДИСКОНТ (%)</label><input type="number" id="crm-discount" class="cyber-input" style="height:40px;" value="0"></div>
-            <div class="flex-row gap-10 mt-10">
-                <button class="btn-secondary flex-1" onclick="app.closeModals()">ОТМЕНА</button>
-                <button class="btn-gold flex-1" onclick="app.crm.addGuest()">АКТИВИРОВАТЬ ПРОФИЛЬ</button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module" src="js/app.js?v=32.0"></script>
+    <script type="module" src="js/app.js?v=33.0"></script>
 </body>
 </html>
