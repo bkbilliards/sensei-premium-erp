@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENSEI ERP X | Enterprise Edition</title>
+    <title>SENSEI ERP X | Enterprise Edition v32.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=JetBrains+Mono:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=31.0">
+    <link rel="stylesheet" href="css/style.css?v=32.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="billiard-vibe">
@@ -18,14 +18,14 @@
             <h1 class="brand-title gold-gradient">SENSEI</h1>
             <p class="tagline">ENTERPRISE OS</p>
             <div class="input-group">
-                <label>АВТОРИЗАЦИЯ</label>
-                <select id="staffSelect" class="cyber-input"><option>Загрузка...</option></select>
+                <label>АВТОРИЗАЦИЯ СОТРУДНИКА</label>
+                <select id="staffSelect" class="cyber-input"><option>Загрузка персонала...</option></select>
             </div>
             <div class="input-group">
-                <label>PIN-КОД</label>
+                <label>PIN-КОД ДОСТУПА</label>
                 <input type="password" id="pinInput" class="cyber-input text-center text-24" placeholder="••••" inputmode="numeric">
             </div>
-            <button type="button" onclick="app.login()" class="btn-gold big-btn mt-10">ВХОД В СИСТЕМУ</button>
+            <button type="button" id="btn-login-submit" class="btn-gold big-btn mt-10">ВХОД В ТЕРМИНАЛ</button>
         </div>
     </div>
 
@@ -34,15 +34,15 @@
             <div class="container topbar-container flex-between w-100">
                 <div class="brand-zone flex-column gap-5">
                     <div class="brand gold-gradient">SENSEI</div>
-                    <div class="role-badge"><span id="userName" class="gold-text bold">---</span> • <span class="success-text">ОНЛАЙН</span></div>
+                    <div class="role-badge"><span id="userName" class="gold-text bold">---</span> • <span class="success-text bold">ОНЛАЙН</span></div>
                 </div>
                 
                 <div class="header-stats hide-mobile flex-row gap-15">
-                    <div class="stat-item"><span class="muted-text">💵 ВЫРУЧКА</span><b id="head-total" class="gold-text text-14">0 ₸</b></div>
-                    <div class="stat-item"><span class="muted-text">📱 QR</span><b id="head-qr" class="blue-text text-14">0 ₸</b></div>
-                    <div class="stat-item"><span class="muted-text">🎱 СТОЛЫ</span><b id="head-tables-rev" class="text-white text-14">0 ₸</b></div>
-                    <div class="stat-item"><span class="muted-text">🍹 БАР</span><b id="head-bar" class="text-white text-14">0 ₸</b></div>
-                    <div class="stat-item"><span class="muted-text">⚠ ДОЛГИ</span><b id="head-debts" class="danger-text text-14">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">💵 ВЫРУЧКА ОБЩАЯ</span><b id="head-total" class="gold-text text-14 font-mono">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">📱 QR ОПЛАТЫ</span><b id="head-qr" class="blue-text text-14 font-mono">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">🎱 АРЕНДА ЗАЛА</span><b id="head-tables-rev" class="text-white text-14 font-mono">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">🍹 ВЫРУЧКА БАРА</span><b id="head-bar" class="text-white text-14 font-mono">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">⚠ ДОЛГИ КЛУБА</span><b id="head-debts" class="danger-text text-14 font-mono">0 ₸</b></div>
                 </div>
 
                 <div class="action-zone flex-column text-right gap-5 hide-mobile">
@@ -54,18 +54,15 @@
 
         <nav class="cyber-nav hide-mobile no-print">
             <div class="container nav-container flex-between">
-                <div class="flex-row gap-10">
-                    <button class="nav-btn active" onclick="app.switchTab('hall')">🎱 ЗАЛ И ЧЕКИ</button>
-                    <button class="nav-btn" onclick="app.switchTab('stock')">🍹 БАР И POS</button>
-                    <button class="nav-btn owner-only" onclick="app.switchTab('acc')">📈 ФИНАНСЫ И АРХИВ</button>
-                    <button class="nav-btn owner-only" onclick="app.switchTab('inventory')">📦 СКЛАД</button>
-                    <button class="nav-btn" onclick="app.switchTab('debts')">📓 ДОЛГИ</button>
-                    <button class="nav-btn" onclick="app.switchTab('crm')">👤 ГОСТИ (CRM)</button>
+                <div class="flex-row gap-10" id="main-nav-tabs">
+                    <button class="nav-btn active" data-tab="hall">🎱 ЗАЛ И ЧЕКИ</button>
+                    <button class="nav-btn" data-tab="stock">🍹 БАР И POS</button>
+                    <button class="nav-btn owner-only success-text" data-tab="acc">📈 ФИНАНСЫ И АРХИВ</button>
+                    <button class="nav-btn owner-only" data-tab="inventory">📦 СКЛАД</button>
+                    <button class="nav-btn" data-tab="debts">📓 ДОЛГИ</button>
+                    <button class="nav-btn" data-tab="crm">👤 ГОСТИ (CRM)</button>
                 </div>
-                <div class="flex-row gap-10">
-                    <button class="btn-dark btn-sm warning-text" onclick="app.ui.toast('Уведомлений нет', 'warning')">🔔</button>
-                    <button class="btn-dark btn-sm danger-text" onclick="app.logout()" style="border-color: rgba(255,69,58,0.3); padding: 10px 20px;">⏹ ЗАКРЫТЬ СМЕНУ</button>
-                </div>
+                <button id="btn-logout" class="btn-danger btn-sm" style="padding: 10px 20px;">⏹ ЗАКРЫТЬ СМЕНУ</button>
             </div>
         </nav>
 
@@ -76,7 +73,7 @@
                     <div id="tablesGrid" class="map-view-container"></div>
                     <div class="mt-10 mb-40">
                         <h3 class="gold-text text-12 mb-15 uppercase letter-spacing flex-row align-center gap-10">
-                            <span>💳 ОЖИДАЮТ ОПЛАТЫ</span>
+                            <span>💳 ОЖИДАЮТ ОПЛАТЫ (ОЧЕРЕДЬ КАССЫ)</span>
                             <span class="badge badge-yellow" id="waiting-count">0</span>
                         </h3>
                         <div id="waiting-payments-list" class="payments-list flex-column gap-10"></div>
@@ -84,8 +81,8 @@
                 </div>
                 
                 <div class="right-control-panel hide-mobile">
-                    <div class="control-section mb-30">
-                        <div class="muted-text mb-10">БЫСТРЫЕ ДЕЙСТВИЯ</div>
+                    <div class="control-section mb-25">
+                        <div class="muted-text mb-10">БЫСТРЫЙ ДОСТУП</div>
                         <div class="control-actions-grid">
                             <button class="action-btn" onclick="app.switchTab('stock')"><span class="icon text-white">🍹</span>БАР (POS)</button>
                             <button class="action-btn" onclick="app.switchTab('crm')"><span class="icon text-white">👤</span>ГОСТИ</button>
@@ -93,14 +90,14 @@
                         </div>
                     </div>
                     
-                    <div class="control-section mb-20 mt-auto">
-                        <div class="glass-panel p-15 mb-15" style="max-height: 250px; overflow-y: auto;">
-                            <div class="gold-text bold text-10 uppercase mb-10">📡 СОБЫТИЯ ЗАЛА</div>
+                    <div class="control-section mb-20 mt-auto flex-column flex-1" style="overflow: hidden;">
+                        <div class="glass-panel p-15 mb-15 flex-column flex-1" style="overflow: hidden;">
+                            <div class="gold-text bold text-10 uppercase mb-10">📡 ЖУРНАЛ СОБЫТИЙ (LIVE)</div>
                             <div id="activity-feed" class="activity-feed-list"></div>
                         </div>
                         <div class="flex-row gap-10">
-                            <button class="action-btn flex-1 danger-border" onclick="app.ui.openModal('modal-incident')"><span class="icon danger-text">🚨</span>ПРОБЛЕМА</button>
-                            <button class="action-btn flex-1 gold-border" onclick="app.ui.toast('Вызов владельца', 'success')"><span class="icon gold-text">👑</span>ПОМОЩЬ</button>
+                            <button class="action-btn flex-1 danger-border" onclick="app.ui.openModal('modal-incident')"><span class="icon danger-text">🚨</span>ИНЦИДЕНТ</button>
+                            <button class="action-btn flex-1 gold-border" onclick="app.ui.toast('Вызов хозяина отправлен', 'success')"><span class="icon gold-text">👑</span>ПОМОЩЬ</button>
                         </div>
                     </div>
                 </div>
@@ -109,11 +106,14 @@
             <div id="tab-stock" class="tab-pane hidden flex-column h-100">
                 <div class="pos-layout h-100">
                     <div class="pos-main flex-column gap-15 h-100">
+                        <div class="flex-row gap-10">
+                            <span class="badge" style="background: rgba(212,175,55,0.08); color: var(--gold);">🔥 ХИТЫ: RedBull, Coca-Cola, Чай</span>
+                        </div>
                         <div class="flex-between align-center glass-panel" style="padding: 10px 15px;">
-                            <div class="flex-row gap-5">
-                                <button class="btn-dark btn-sm active" onclick="app.renderPosItems('Все')">ВСЕ</button>
-                                <button class="btn-dark btn-sm" onclick="app.renderPosItems('Напитки')">НАПИТКИ</button>
-                                <button class="btn-dark btn-sm" onclick="app.renderPosItems('Кальян')">КАЛЬЯН</button>
+                            <div class="flex-row gap-5" id="pos-filter-buttons">
+                                <button class="btn-dark btn-sm active" data-cat="Все">ВСЕ ПОЗИЦИИ</button>
+                                <button class="btn-dark btn-sm" data-cat="Напитки">НАПИТКИ</button>
+                                <button class="btn-dark btn-sm" data-cat="Кальян">КАЛЬЯН</button>
                             </div>
                         </div>
                         <div class="pos-dense-grid flex-1" id="pos-items-grid"></div>
@@ -121,88 +121,139 @@
 
                     <div class="pos-cart glass-panel flex-column">
                         <div class="flex-between mb-15">
-                            <h3 class="gold-text text-14 uppercase letter-spacing m-0">🛒 КОРЗИНА</h3>
-                            <button class="btn-secondary btn-sm" onclick="app.clearCart()">ОЧИСТИТЬ</button>
+                            <h3 class="gold-text text-14 uppercase letter-spacing m-0">🛒 ТЕКУЩИЙ ЗАКАЗ</h3>
+                            <button class="btn-secondary btn-sm" onclick="app.pos.clearCart()">ОЧИСТИТЬ</button>
                         </div>
                         
                         <div class="flex-column gap-10 mb-15">
-                            <select id="pos-target" class="cyber-input" style="height: 40px; font-size: 12px;" onchange="app.updateTargetUI()">
-                                <option value="none">📍 БЫСТРЫЙ ЧЕК (БАР)</option>
-                            </select>
-                            <input type="text" id="pos-guest" class="cyber-input" list="guest-datalist" placeholder="👤 Гость / Комментарий" style="height: 35px; font-size: 11px;">
+                            <label class="muted-text text-10">НАПРАВЛЕНИЕ СЧЕТА:</label>
+                            <select id="pos-target" class="cyber-input" style="height: 40px; font-size: 12px;"></select>
+                            <input type="text" id="pos-guest" class="cyber-input" list="guest-datalist" placeholder="👤 Имя гостя / Комментарий к заказу" style="height: 38px; font-size: 11px;">
                         </div>
 
                         <div class="cart-items flex-1 border-bottom pb-15" id="pos-cart-list"></div>
 
                         <div class="cart-footer mt-15">
                             <div class="flex-between mb-15 align-end">
-                                <span class="muted-text text-12 mb-5">ИТОГО:</span>
+                                <span class="muted-text text-12 mb-5">ИТОГО К ОПЛАТЕ:</span>
                                 <span class="gold-text text-24 bold font-mono" id="pos-total">0 ₸</span>
                             </div>
 
                             <div id="pos-actions-quick" class="flex-column gap-10">
-                                <div class="flex-row gap-5">
-                                    <button class="btn-dark flex-1 success-text py-15" style="border-color: rgba(46,160,67,0.3);" onclick="app.checkoutCart('НАЛ')">💵 НАЛ</button>
-                                    <button class="btn-dark flex-1 blue-text py-15" style="border-color: rgba(88,166,255,0.3);" onclick="app.checkoutCart('QR')">📱 QR</button>
-                                    <button class="btn-dark flex-1 warning-text py-15" style="border-color: rgba(210,153,34,0.3);" onclick="app.checkoutCart('MIX')">🟡 MIX</button>
+                                <div class="flex-row gap-10">
+                                    <button class="btn-dark flex-1 success-text py-15" style="border-color: rgba(46,160,67,0.3);" onclick="app.pos.checkout('НАЛ')">💵 НАЛ</button>
+                                    <button class="btn-dark flex-1 blue-text py-15" style="border-color: rgba(56,139,253,0.3);" onclick="app.pos.checkout('QR')">📱 QR</button>
+                                    <button class="btn-dark flex-1 danger-text py-15" style="border-color: rgba(248,81,73,0.3);" onclick="app.pos.checkout('ДОЛГ')">💸 ДОЛГ</button>
                                 </div>
-                                <button class="btn-dark w-100 py-15 danger-text" style="border-color: rgba(248,81,73,0.3);" onclick="app.checkoutCart('ДОЛГ')">💸 В ДОЛГ</button>
                             </div>
 
                             <div id="pos-actions-table" class="hidden flex-column gap-10">
-                                <button class="btn-gold w-100 py-15" onclick="app.sendCartToTable()">📥 ОТПРАВИТЬ В СЧЕТ СТОЛА</button>
+                                <button class="btn-gold w-100 py-15" onclick="app.pos.sendToTable()">📥 ПРИВЯЗАТЬ К ЧЕКУ СТОЛА</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div id="tab-acc" class="tab-pane hidden"><h2 class="gold-text mt-40">📈 ФИНАНСЫ И АРХИВ (В РАЗРАБОТКЕ)</h2></div>
-            <div id="tab-inventory" class="tab-pane hidden"><h2 class="gold-text mt-40">📦 СКЛАД (В РАЗРАБОТКЕ)</h2></div>
-            <div id="tab-debts" class="tab-pane hidden"><h2 class="danger-text mt-40">📓 ДОЛГИ (В РАЗРАБОТКЕ)</h2></div>
-            <div id="tab-crm" class="tab-pane hidden"><h2 class="gold-text mt-40">👤 ГОСТИ (В РАЗРАБОТКЕ)</h2></div>
+            <div id="tab-acc" class="tab-pane hidden flex-column h-100" style="overflow-y: auto; padding-right:5px;">
+                <div class="period-nav-bar mb-20 flex-between align-center">
+                    <div class="flex-row gap-5">
+                        <button class="p-btn active">ТЕКУЩАЯ СМЕНА</button>
+                        <button class="p-btn">СЕГОДНЯ</button>
+                        <button class="p-btn">МЕСЯЦ</button>
+                    </div>
+                </div>
+                <div class="finance-dashboard-layout">
+                    <div class="finance-main-col w-100">
+                        <div class="kpi-grid-large mb-15">
+                            <div class="f-card f-lg f-primary"><div class="f-title">ВЫРУЧКА СМЕНЫ ОБЩАЯ</div><div class="f-val gold-text font-mono" id="f-total">0 ₸</div></div>
+                            <div class="f-card f-lg"><div class="f-title">ЧИСТАЯ ПРИБЫЛЬ БАРА</div><div class="f-val success-text font-mono" id="f-profit">0 ₸</div></div>
+                            <div class="f-card f-lg alert-card"><div class="f-title">ЗАФИКСИРОВАННЫЕ ДОЛГИ</div><div class="f-val danger-text font-mono" id="f-debts">0 ₸</div></div>
+                        </div>
+                        <div class="glass-panel mt-10" style="padding: 0; overflow-x:auto;">
+                            <table class="archive-table w-100">
+                                <thead><tr><th>Время Закрытия</th><th>Объект</th><th>Клиент</th><th>Аренда Сукно</th><th>Продажи Бар</th><th>Итоговый Счёт</th><th>Метод</th><th class="text-right">Регистратор</th></tr></thead>
+                                <tbody id="archive-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-inventory" class="tab-pane hidden flex-column h-100" style="overflow-y: auto; padding-right:5px;">
+                <div class="flex-between mb-20 align-center">
+                    <h2 class="gold-text uppercase letter-spacing m-0">📦 СКЛАДСКОЙ УЧЕТ И ОСТАТКИ</h2>
+                    <button class="btn-gold" onclick="app.ui.openModal('modal-purchase')">+ ОПРИХОДОВАТЬ ТОВАР</button>
+                </div>
+                <div class="glass-panel" style="padding: 0; overflow-x:auto;">
+                    <table class="archive-table w-100">
+                        <thead><tr><th>Категория номенклатуры</th><th>Наименование позиции</th><th>Себестоимость ед.</th><th>Розничная цена (POS)</th><th>Текущий остаток</th><th class="text-right">Статус склада</th></tr></thead>
+                        <tbody id="inventory-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-debts" class="tab-pane hidden flex-column h-100" style="overflow-y: auto; padding-right:5px;">
+                <div class="flex-between mb-20 align-center">
+                    <h2 class="danger-text uppercase letter-spacing m-0">📓 ЖУРНАЛ ДЕБИТОРСКИХ ЗАДОЛЖЕННОСТЕЙ</h2>
+                </div>
+                <div class="glass-panel" style="padding: 0; overflow-x:auto;">
+                    <table class="archive-table w-100">
+                        <thead><tr><th>Дата Фиксации</th><th>Должник (ФИО/Профиль)</th><th>Сумма задолженности</th><th>Администратор смены</th><th class="text-right">Действия операции</th></tr></thead>
+                        <tbody id="debts-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-crm" class="tab-pane hidden flex-column h-100" style="overflow-y: auto; padding-right:5px;">
+                <div class="flex-between mb-20 align-center">
+                    <h2 class="gold-text uppercase letter-spacing m-0">👤 ЦЕНТРАЛЬНАЯ КЛИЕНТСКАЯ БАЗА CRM</h2>
+                    <button class="btn-gold" onclick="app.ui.openModal('modal-guest')">+ СТРАУКТУРИРОВАТЬ НОВОГО ГОСТЯ</button>
+                </div>
+                <div class="glass-panel" style="padding: 0; overflow-x:auto;">
+                    <table class="archive-table w-100">
+                        <thead><tr><th>Имя контрагента</th><th>Контактный телефон</th><th>Установленный дисконт</th><th>Общий оборот (spent)</th><th class="text-right">Статус лояльности</th></tr></thead>
+                        <tbody id="crm-list"></tbody>
+                    </table>
+                </div>
+            </div>
 
         </main>
 
-        <div class="mobile-bottom-nav no-print">
-            <button class="m-nav-item active" onclick="app.switchTab('hall')">🎱<span>ЗАЛ</span></button>
-            <button class="m-nav-item" onclick="app.switchTab('stock')">🍹<span>БАР</span></button>
-            <button class="m-nav-item owner-only" onclick="app.switchTab('acc')">📈<span>ФИНАНСЫ</span></button>
-            <button class="m-nav-item" onclick="app.switchTab('debts')">📓<span>ДОЛГИ</span></button>
-            <button class="m-nav-item" onclick="app.switchTab('crm')">👤<span>ГОСТИ</span></button>
+        <div class="mobile-bottom-nav no-print" id="mobile-nav-tabs">
+            <button class="m-nav-item active" data-tab="hall">🎱<span>ЗАЛ</span></button>
+            <button class="m-nav-item" data-tab="stock">🍹<span>БАР</span></button>
+            <button class="m-nav-item owner-only" data-tab="acc">📈<span>ФИНАНСЫ</span></button>
+            <button class="m-nav-item" data-tab="debts">📓<span>ДОЛГИ</span></button>
+            <button class="m-nav-item" data-tab="crm">👤<span>ГОСТИ</span></button>
         </div>
     </div>
 
     <div id="modal-manage-table" class="overlay hidden">
         <div class="glass-card" style="width: 350px;">
             <div class="flex-between mb-20">
-                <h2 class="gold-text m-0">🎱 СТОЛ <span id="m-table-id"></span></h2>
+                <h2 class="gold-text m-0">🎱 ПАНЕЛЬ СТОЛА <span id="m-table-id">--</span></h2>
                 <div class="modal-close" onclick="app.closeModals()">✕</div>
             </div>
             
-            <div class="glass-panel mb-20 text-center" style="background: #0A0E14;">
-                <div class="muted-text text-11 mb-5 uppercase letter-spacing">ТЕКУЩИЙ СТАТУС</div>
+            <div class="glass-panel mb-20 text-center" style="background: #090B0E;">
+                <div class="muted-text text-11 mb-5 uppercase letter-spacing">ТЕКУЩИЙ ХРОНОМЕТРАЖ</div>
                 <div class="text-24 text-white bold mb-5 font-mono" id="m-table-timer">00:00:00</div>
                 <div class="text-18 gold-text bold font-mono" id="m-table-cost">0 ₸</div>
             </div>
 
-            <div class="flex-column gap-10" id="m-actions-active">
-                <button class="btn-dark py-15" onclick="app.ui.toast('Гость привязан', 'success')">👤 ПРИВЯЗАТЬ ГОСТЯ</button>
+            <div class="flex-column gap-10 hidden" id="m-actions-active">
+                <button class="btn-dark py-15" onclick="app.ui.toast('Контрагент привязан к сессии', 'success')">👤 ПРИВЯЗАТЬ КАРТУ CRM</button>
                 <div class="flex-row gap-10">
-                    <button class="btn-gold flex-1" onclick="app.openBarForTable()">🍹 БАР</button>
-                    <button class="btn-dark flex-1" onclick="app.pauseTableFromManage()">⏸ ПАУЗА</button>
+                    <button class="btn-gold flex-1" onclick="app.tables.openBarForTable()">🍹 КАССА БАРА</button>
+                    <button class="btn-dark flex-1" onclick="app.tables.pauseTableFromManage()">⏸ ПАУЗА / СТОП-ТАЙМ</button>
                 </div>
-                <div class="flex-row gap-10 mt-10">
-                    <button class="btn-dark flex-1" onclick="app.ui.toast('Счет разделен', 'warning')">👥 СПЛИТ</button>
-                    <button class="btn-dark flex-1" onclick="app.ui.toast('Пересадка', 'warning')">🔄 ПЕРЕНОС</button>
-                </div>
-                <button class="btn-danger w-100 py-15 mt-10" onclick="app.openStopPanel()">⏹ ЗАКРЫТЬ СТОЛ (СЧЕТ)</button>
+                <button class="btn-danger w-100 py-15 mt-10" onclick="app.tables.openStopPanel()">StringTo СТОП (РАСЧЕТ СЧЕТА)</button>
             </div>
 
             <div class="flex-column gap-10 hidden" id="m-actions-free">
-                <button class="btn-gold py-15" onclick="app.startTableFromManage()">▶ ПУСК (ПРОБЕЛ)</button>
-                <button class="btn-dark py-15" onclick="app.ui.toast('Бронь установлена', 'success')">📅 ДОБАВИТЬ БРОНЬ</button>
-                <button class="btn-dark py-15 blue-text" style="border-color:rgba(88,166,255,0.3);" onclick="app.ui.toast('Уборка начата', 'warning')">🧹 УБОРКА СТОЛА</button>
+                <button class="btn-gold tyranny-btn py-15" onclick="app.tables.startTableFromManage()">▶ ЗАПУСТИТЬ ИГРУ [ВРЕМЯ]</button>
+                <button class="btn-dark py-15" onclick="app.ui.toast('Резервирование сохранено', 'success')">📅 УСТАНОВИТЬ СТРОГУЮ БРОНЬ</button>
             </div>
         </div>
     </div>
@@ -210,57 +261,91 @@
     <div id="modal-stop-table" class="overlay hidden">
         <div class="glass-card" style="width: 380px;">
             <div class="flex-between mb-20">
-                <h2 class="danger-text m-0">ЗАКРЫТЬ СТОЛ <span id="stop-table-id"></span></h2>
+                <h2 class="danger-text m-0">ЗАКРЫТИЕ СЕССИИ СТОЛА <span id="stop-table-id">--</span></h2>
                 <div class="modal-close" onclick="app.closeModals()">✕</div>
             </div>
-            <div class="glass-panel mb-20 text-center" style="background: #0A0E14;">
-                <div class="flex-between mb-10"><span class="muted-text">Аренда:</span><span class="text-white font-mono" id="stop-rent-sum">0 ₸</span></div>
-                <div class="flex-between mb-15"><span class="muted-text">Бар:</span><span class="text-white font-mono" id="stop-bar-sum">0 ₸</span></div>
+            <div class="glass-panel mb-20 text-center" style="background: #090B0E;">
+                <div class="flex-between mb-10"><span class="muted-text">Аренда сукна:</span><span class="text-white font-mono" id="stop-rent-sum">0 ₸</span></div>
+                <div class="flex-between mb-15"><span class="muted-text">Доп. услуги / Бар:</span><span class="text-white font-mono" id="stop-bar-sum">0 ₸</span></div>
                 <div class="border-bottom pb-15 mb-15" style="border-color: rgba(255,255,255,0.05);"></div>
                 <div class="huge-text gold-text font-mono" id="stop-total-sum">0 ₸</div>
             </div>
             <div class="input-group">
-                <label>ИМЯ ГОСТЯ (ДЛЯ ЧЕКА)</label>
-                <input type="text" id="stop-guest-name" class="cyber-input" list="guest-datalist" placeholder="Гость">
+                <label>ИМЯ ПОСЕТИТЕЛЯ ДЛЯ ИДЕНТИФИКАЦИИ ЧЕКА</label>
+                <input type="text" id="stop-guest-name" class="cyber-input" list="guest-datalist" placeholder="Введите имя гостя">
             </div>
-            <button onclick="app.confirmStopTable()" class="btn-danger big-btn mt-10">ВЫСТАВИТЬ СЧЕТ (В КАССУ)</button>
+            <button onclick="app.tables.confirmStopTable()" class="btn-danger big-btn mt-10">ВЫСТАВИТЬ СЧЕТ В ОЧЕРЕДЬ КАССЫ</button>
         </div>
     </div>
 
     <div id="modal-pay" class="overlay hidden">
         <div class="glass-card fast-pay-card" style="width: 360px;">
-            <h2 class="gold-text mb-20 text-center uppercase text-14">ОПЛАТА СЧЕТА</h2>
+            <h2 class="gold-text mb-20 text-center uppercase text-14">ПРОВЕДЕНИЕ ТРАНЗАКЦИИ</h2>
             <div class="huge-text text-center text-white mb-30 font-mono" id="pay-sum">0 ₸</div>
             <input type="hidden" id="pay-check-id">
             <div class="flex-column gap-10">
                 <div class="flex-row gap-10">
-                    <button class="btn-dark flex-1 py-15 success-text" style="border-color: rgba(46,160,67,0.3);" onclick="app.confirmPayActiveCheck('НАЛ')">💵 НАЛ (F1)</button>
-                    <button class="btn-dark flex-1 py-15 blue-text" style="border-color: rgba(88,166,255,0.3);" onclick="app.confirmPayActiveCheck('QR')">📱 QR (F2)</button>
+                    <button class="btn-dark flex-1 py-15 success-text" style="border-color: rgba(46,160,67,0.3);" onclick="app.confirmPayActiveCheck('НАЛ')">💵 НАЛ [F1]</button>
+                    <button class="btn-dark flex-1 py-15 blue-text" style="border-color: rgba(88,166,255,0.3);" onclick="app.confirmPayActiveCheck('QR')">📱 QR [F2]</button>
                     <button class="btn-dark flex-1 py-15 warning-text" style="border-color: rgba(210,153,34,0.3);" onclick="app.confirmPayActiveCheck('MIX')">🟡 MIX</button>
                 </div>
-                <button class="btn-dark w-100 py-15 danger-text" style="border-color: rgba(248,81,73,0.3);" onclick="app.confirmPayActiveCheck('ДОЛГ')">💸 ОФОРМИТЬ В ДОЛГ</button>
+                <button class="btn-dark w-100 py-15 danger-text" style="border-color: rgba(248,81,73,0.3);" onclick="app.confirmPayActiveCheck('ДОЛГ')">💸 ОФОРМИТЬ ДЕБИТОРСКИЙ ДОЛГ</button>
             </div>
-            <button class="btn-secondary w-100 mt-20" onclick="app.closeModals()">ОТМЕНА (ESC)</button>
+            <button class="btn-secondary w-100 mt-20" onclick="app.closeModals()">ВЕРНУТЬСЯ НАЗАД (ESC)</button>
         </div>
     </div>
 
     <div id="modal-incident" class="overlay hidden">
         <div class="glass-card" style="width: 380px;">
             <div class="flex-between mb-20">
-                <h2 class="danger-text m-0">🚨 ФИКСАЦИЯ ИНЦИДЕНТА</h2>
+                <h2 class="danger-text m-0">🚨 РЕГИСТРАЦИЯ НАРУШЕНИЯ / ПОРЧИ</h2>
                 <div class="modal-close" onclick="app.closeModals()">✕</div>
             </div>
             <div class="input-group">
-                <label>ТИП ПРОБЛЕМЫ</label>
+                <label>КАТЕГОРИЯ ПРОИСШЕСТВИЯ</label>
                 <select id="inc-type" class="cyber-input" style="height: 40px;">
-                    <option>Разбили посуду</option><option>Испортили сукно</option><option>Конфликт</option>
+                    <option>Испорчено/прожжено сукно стола</option>
+                    <option>Поврежден/сломан кий</option>
+                    <option>Бой посуды/стекла барной зоны</option>
+                    <option>Деструктивное поведение клиентов</option>
                 </select>
             </div>
-            <div class="input-group"><label>СУММА УЩЕРБА (₸)</label><input type="number" id="inc-amount" class="cyber-input" value="0" style="height: 40px;"></div>
-            <button onclick="app.logIncident()" class="btn-danger big-btn mt-10">ОТПРАВИТЬ ХОЗЯИНУ</button>
+            <div class="input-group">
+                <label>ОЦЕНКА УЩЕРБА / КОМПЕНСАЦИЯ (₸)</label>
+                <input type="number" id="inc-amount" class="cyber-input" value="0" style="height: 40px;">
+            </div>
+            <button onclick="app.logIncident()" class="btn-danger big-btn mt-10">ЗАКРЕПИТЬ В АУДИТ СМЕНЫ</button>
         </div>
     </div>
 
-    <script type="module" src="js/app.js?v=31.0"></script>
+    <div id="modal-purchase" class="overlay hidden">
+        <div class="glass-card" style="width: 350px;">
+            <h2 class="gold-text mb-20 uppercase text-14">📦 ПРИХОДНЫЙ ОРДЕР СКЛАДА</h2>
+            <div class="input-group"><label>ПОЗИЦИЯ ИЗ КАТАЛОГА</label><select id="pur-item" class="cyber-input" style="height:40px;"></select></div>
+            <div class="flex-row gap-10">
+                <div class="input-group flex-1"><label>КОЛ-ВО (ШТ)</label><input type="number" id="pur-qty" class="cyber-input" style="height:40px;"></div>
+                <div class="input-group flex-1"><label>СЕБЕСТОИМОСТЬ ЕД.</label><input type="number" id="pur-cost" class="cyber-input" style="height:40px;"></div>
+            </div>
+            <div class="flex-row gap-10 mt-10">
+                <button class="btn-secondary flex-1" onclick="app.closeModals()">ОТМЕНА</button>
+                <button class="btn-gold flex-1" onclick="app.inventory.addPurchase()">УВЕЛИЧИТЬ ОСТАТОК</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-guest" class="overlay hidden">
+        <div class="glass-card" style="width: 350px;">
+            <h2 class="gold-text mb-20 uppercase text-14">👤 РЕГИСТРАЦИЯ КОНТРАГЕНТА В CRM</h2>
+            <div class="input-group"><label>ФИО ГОСТЯ / НАИМЕНОВАНИЕ</label><input type="text" id="crm-name" class="cyber-input" style="height:40px;"></div>
+            <div class="input-group"><label>ТЕЛЕФОННЫЙ НОМЕР</label><input type="text" id="crm-phone" class="cyber-input" style="height:40px;" placeholder="+7..."></div>
+            <div class="input-group"><label>ПЕРСОНАЛЬНЫЙ ДИСКОНТ (%)</label><input type="number" id="crm-discount" class="cyber-input" style="height:40px;" value="0"></div>
+            <div class="flex-row gap-10 mt-10">
+                <button class="btn-secondary flex-1" onclick="app.closeModals()">ОТМЕНА</button>
+                <button class="btn-gold flex-1" onclick="app.crm.addGuest()">АКТИВИРОВАТЬ ПРОФИЛЬ</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js?v=32.0"></script>
 </body>
 </html>
