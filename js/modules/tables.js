@@ -15,7 +15,6 @@ export function initTables(app, supabase) {
                 let barCost = t.bar_amount || 0;
                 let totalCost = rentCost + barCost;
                 
-                // ЛОГИКА 1 КЛИКА: Кнопки зависят от статуса
                 let btnsFree = `
                     <button class="btn-gold flex-1" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
                     <button class="btn-dark" style="width: 50px;" onclick="app.ui.toast('Бронь', 'warning')">📅</button>
