@@ -1,367 +1,185 @@
-import { supabase } from "../supabase.js";
+export function initTables() {
 
-let realtimeChannel = null;
-let tablesData = [];
-let timers = {};
+const tableCards = document.querySelectorAll(".table-card");
+const liveLog = document.querySelector("#live-log");
 
-const HOUR_RATE_DAY = 2500;
-const HOUR_RATE_NIGHT = 3000;
+function addLive(text) {
 
-const container = document.getElementById("tables-container");
-const liveCenter = document.getElementById("live-center");
+if (!liveLog) return;
 
-function toast(message, type = "success") {
-    const toast = document.createElement("div");
+const item = document.createElement("div");
 
-    toast.className = `toast toast-${type}`;
-    toast.innerText = message;
+item.className = "live-item";
 
-    document.body.appendChild(toast);
+item.innerHTML = `
+<div class="live-time">
+${new Date().toLocaleTimeString()}
+</div>
 
-    setTimeout(() => {
-        toast.classList.add("show");
-    }, 50);
+<div class="live-text">
+${text}
+</div>
+`;
 
-    setTimeout(() => {
-        toast.classList.remove("show");
+liveLog.prepend(item);
 
-        setTimeout(() => {
-            toast.remove();
-        }, 300);
-
-    }, 3000);
 }
 
-function logLiveEvent(text) {
+function toast(text, type = "success") {
 
-    if (!liveCenter) return;
+const toast = document.createElement("div");
 
-    const item = document.createElement("div");
+toast.className = `sensei-toast ${type}`;
 
-    item.className = "live-event";
+toast.innerText = text;
 
-    const now = new Date();
+document.body.appendChild(toast);
 
-    item.innerHTML = `
-        <span>${now.toLocaleTimeString()}</span>
-        <strong>${text}</strong>
-    `;
+setTimeout(() => {
+toast.classList.add("show");
+}, 50);
 
-    liveCenter.prepend(item);
+setTimeout(() => {
+
+toast.classList.remove("show");
+
+setTimeout(() => {
+toast.remove();
+}, 300);
+
+}, 2500);
+
 }
 
-function getRate() {
+tableCards.forEach(card => {
 
-    const hour = new Date().getHours();
+const startBtn = card.querySelector(".btn-start");
+const pauseBtn = card.querySelector(".btn-pause");
+const stopBtn = card.querySelector(".btn-stop");
 
-    if (hour >= 14 && hour < 18) {
-        return HOUR_RATE_DAY;
-    }
+const statusEl = card.querySelector(".table-status");
+const timerEl = card.querySelector(".table-timer");
 
-    return HOUR_RATE_NIGHT;
+let seconds = 0;
+let interval = null;
+let paused = false;
+
+function updateTimer() {
+
+seconds++;
+
+const h = String(Math.floor(seconds / 3600)).padStart(2, "0");
+const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+const s = String(seconds % 60).padStart(2, "0");
+
+if (timerEl) {
+timerEl.innerText = `${h}:${m}:${s}`;
 }
 
-function formatTime(seconds) {
-
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-
-    return `
-        ${String(h).padStart(2, "0")}:
-        ${String(m).padStart(2, "0")}:
-        ${String(s).padStart(2, "0")}
-    `;
 }
 
-async function loadTables() {
+if (startBtn) {
 
-    const { data, error } = await supabase
-        .from("tables")
-        .select("*")
-        .order("id");
+startBtn.addEventListener("click", () => {
 
-    if (error) {
+if (interval) return;
 
-        toast("Ошибка загрузки столов", "error");
-        console.error(error);
+card.classList.remove("table-free");
+card.classList.add("table-active");
 
-        return;
-    }
-
-    tablesData = data;
-
-    renderTables();
+if (statusEl) {
+statusEl.innerText = "ИГРАЕТ";
 }
 
-function getStatusClass(status) {
+interval = setInterval(updateTimer, 1000);
 
-    switch (status) {
+toast("Стол запущен");
 
-        case "PLAYING":
-            return "table-playing";
+addLive("🎱 Стол запущен");
 
-        case "PAUSED":
-            return "table-paused";
+});
 
-        case "BOOKED":
-            return "table-booked";
-
-        case "PROBLEM":
-            return "table-problem";
-
-        default:
-            return "table-free";
-    }
 }
 
-function renderTables() {
+if (pauseBtn) {
 
-    if (!container) return;
+pauseBtn.addEventListener("click", () => {
 
-    container.innerHTML = "";
+if (!interval) return;
 
-    tablesData.forEach(table => {
+if (!paused) {
 
-        const card = document.createElement("div");
+clearInterval(interval);
 
-        card.className = `
-            premium-table
-            ${getStatusClass(table.status)}
-        `;
+paused = true;
 
-        const seconds = table.accumulated_time || 0;
+card.classList.remove("table-active");
+card.classList.add("table-paused");
 
-        const total = table.accumulated_cost || 0;
-
-        card.innerHTML = `
-
-            <div class="table-top">
-
-                <div class="table-name">
-                    🎱 СТОЛ ${table.id}
-                </div>
-
-                <div class="table-status">
-                    ${table.status}
-                </div>
-
-            </div>
-
-            <div class="table-center">
-
-                <div class="table-timer">
-                    ${formatTime(seconds)}
-                </div>
-
-                <div class="table-price">
-                    ${total} ₸
-                </div>
-
-            </div>
-
-            <div class="table-actions">
-
-                ${
-                    table.status === "FREE"
-                    ?
-                    `
-                    <button
-                        class="btn btn-start"
-                        onclick="window.startTable(${table.id})"
-                    >
-                        ▶ ПУСК
-                    </button>
-                    `
-                    :
-                    `
-                    <button
-                        class="btn btn-stop"
-                        onclick="window.stopTable(${table.id})"
-                    >
-                        ⏹ ЗАВЕРШИТЬ
-                    </button>
-
-                    <button
-                        class="btn btn-pause"
-                        onclick="window.pauseTable(${table.id})"
-                    >
-                        ⏸ ПАУЗА
-                    </button>
-                    `
-                }
-
-            </div>
-
-        `;
-
-        container.appendChild(card);
-
-        if (table.status === "PLAYING") {
-            startLocalTimer(table.id);
-        }
-    });
+if (statusEl) {
+statusEl.innerText = "ПАУЗА";
 }
 
-function startLocalTimer(tableId) {
+toast("Стол поставлен на паузу", "warning");
 
-    if (timers[tableId]) return;
+addLive("⏸ Стол на паузе");
 
-    timers[tableId] = setInterval(async () => {
+} else {
 
-        const table = tablesData.find(t => t.id === tableId);
+interval = setInterval(updateTimer, 1000);
 
-        if (!table) return;
+paused = false;
 
-        if (table.status !== "PLAYING") {
+card.classList.remove("table-paused");
+card.classList.add("table-active");
 
-            clearInterval(timers[tableId]);
-
-            delete timers[tableId];
-
-            return;
-        }
-
-        table.accumulated_time += 1;
-
-        const pricePerSecond = getRate() / 3600;
-
-        table.accumulated_cost += pricePerSecond;
-
-        renderTables();
-
-    }, 1000);
+if (statusEl) {
+statusEl.innerText = "ИГРАЕТ";
 }
 
-window.startTable = async function(tableId) {
+toast("Стол продолжен");
 
-    toast("Запуск стола...", "loading");
+addLive("▶ Игра продолжена");
 
-    const { error } = await supabase
-        .from("tables")
-        .update({
-            status: "PLAYING",
-            started_at: Date.now()
-        })
-        .eq("id", tableId);
-
-    if (error) {
-
-        toast("Ошибка запуска", "error");
-
-        return;
-    }
-
-    toast("Стол запущен");
-
-    logLiveEvent(`Стол ${tableId} стартовал`);
 }
 
-window.pauseTable = async function(tableId) {
+});
 
-    const table = tablesData.find(t => t.id === tableId);
-
-    if (!table) return;
-
-    const newStatus =
-        table.status === "PAUSED"
-        ? "PLAYING"
-        : "PAUSED";
-
-    const { error } = await supabase
-        .from("tables")
-        .update({
-            status: newStatus
-        })
-        .eq("id", tableId);
-
-    if (error) {
-
-        toast("Ошибка паузы", "error");
-
-        return;
-    }
-
-    toast("Статус обновлен");
-
-    logLiveEvent(`Стол ${tableId}: ${newStatus}`);
 }
 
-window.stopTable = async function(tableId) {
+if (stopBtn) {
 
-    const table = tablesData.find(t => t.id === tableId);
+stopBtn.addEventListener("click", () => {
 
-    if (!table) return;
+clearInterval(interval);
 
-    const confirmClose = confirm(`
-        Завершить стол ${tableId}?
-        Сумма: ${Math.floor(table.accumulated_cost)} ₸
-    `);
+interval = null;
 
-    if (!confirmClose) return;
+seconds = 0;
 
-    const { error } = await supabase
-        .from("tables")
-        .update({
-            status: "FREE",
-            accumulated_time: 0,
-            accumulated_cost: 0,
-            started_at: null
-        })
-        .eq("id", tableId);
+paused = false;
 
-    if (error) {
+card.classList.remove("table-active");
+card.classList.remove("table-paused");
 
-        toast("Ошибка завершения", "error");
+card.classList.add("table-free");
 
-        return;
-    }
-
-    toast("Стол завершен");
-
-    logLiveEvent(`Стол ${tableId} завершен`);
+if (statusEl) {
+statusEl.innerText = "СВОБОДЕН";
 }
 
-function subscribeRealtime() {
-
-    realtimeChannel = supabase
-        .channel("tables-live")
-
-        .on(
-            "postgres_changes",
-            {
-                event: "*",
-                schema: "public",
-                table: "tables"
-            },
-            payload => {
-
-                const updated = payload.new;
-
-                const index = tablesData.findIndex(
-                    t => t.id === updated.id
-                );
-
-                if (index !== -1) {
-                    tablesData[index] = updated;
-                }
-
-                renderTables();
-            }
-        )
-
-        .subscribe(status => {
-
-            console.log("Realtime:", status);
-
-            if (status === "SUBSCRIBED") {
-
-                toast("Realtime подключен");
-
-                logLiveEvent("Realtime активирован");
-            }
-        });
+if (timerEl) {
+timerEl.innerText = "--:--:--";
 }
 
-loadTables();
-subscribeRealtime();
+toast("Стол завершен", "danger");
+
+addLive("⏹ Стол завершен");
+
+});
+
+}
+
+});
+
+}
