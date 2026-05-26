@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENSEI ERP X | Full POS</title>
+    <title>SENSEI ERP X | Enterprise POS</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=JetBrains+Mono:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=28.0">
+    <link rel="stylesheet" href="css/style.css?v=29.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="billiard-vibe">
@@ -57,7 +57,7 @@
                 <div class="flex-row gap-10">
                     <button class="nav-btn active" data-tab="hall">🎱 ЗАЛ И ЧЕКИ</button>
                     <button class="nav-btn" data-tab="stock">🍹 БАР И POS</button>
-                    <button class="nav-btn" data-tab="acc">📈 ФИНАНСЫ И АРХИВ</button>
+                    <button class="nav-btn owner-only" data-tab="acc">📈 ФИНАНСЫ И АРХИВ</button>
                     <button class="nav-btn owner-only" data-tab="inventory">📦 СКЛАД</button>
                     <button class="nav-btn" data-tab="debts">📓 ДОЛГИ</button>
                     <button class="nav-btn" data-tab="crm">👤 ГОСТИ</button>
@@ -188,6 +188,10 @@
                                 <tbody id="archive-list"><tr><td colspan="8" class="text-center py-15 muted-text">Загрузка архива...</td></tr></tbody>
                             </table>
                         </div>
+                        <div class="hide-desktop mt-10">
+                            <div class="gold-text text-12 uppercase bold mb-10">📜 АРХИВ ЧЕКОВ</div>
+                            <div id="archive-mobile-list" class="flex-column gap-10"></div>
+                        </div>
                     </div>
                     <div class="finance-side-col flex-column gap-15 hide-mobile">
                         <div class="glass-panel flex-1 flex-column p-15" style="overflow:hidden;">
@@ -242,9 +246,9 @@
         <div class="mobile-bottom-nav no-print">
             <button class="m-nav-item active" data-tab="hall">🎱<span>ЗАЛ</span></button>
             <button class="m-nav-item" data-tab="stock">🍹<span>БАР</span></button>
-            <button class="m-nav-item" data-tab="acc">💵<span>КАССА</span></button>
-            <button class="m-nav-item" data-tab="inventory">📦<span>СКЛАД</span></button>
-            <button class="m-nav-item" data-tab="crm">👤<span>Я</span></button>
+            <button class="m-nav-item owner-only" data-tab="acc">📈<span>ФИНАНСЫ</span></button>
+            <button class="m-nav-item owner-only" data-tab="inventory">📦<span>СКЛАД</span></button>
+            <button class="m-nav-item" data-tab="crm">👤<span>ГОСТИ</span></button>
         </div>
     </div>
 
@@ -291,7 +295,7 @@
         <div class="muted-text mb-10 text-10">ДЕЙСТВИЯ СО СТОЛОМ</div>
         
         <div class="flex-column gap-10" id="manage-actions-active">
-            <button class="btn-dark py-15" onclick="app.ui.toast('Гость сел', 'warning')">👤 ПРИВЯЗАТЬ ГОСТЯ</button>
+            <button class="btn-dark py-15" onclick="app.ui.toast('Гость привязан', 'success')">👤 ПРИВЯЗАТЬ ГОСТЯ</button>
             <div class="flex-row gap-10">
                 <button class="btn-dark flex-1" onclick="app.tables.openBarForTable(parseInt($('manage-table-id').innerText))">🍹 БАР</button>
                 <button class="btn-dark flex-1" onclick="app.tables.togglePauseFromManage()">⏸ ПАУЗА</button>
@@ -345,6 +349,34 @@
         </div>
     </div>
 
+    <div id="modal-audit" class="overlay hidden">
+        <div class="glass-card" style="width: 450px; padding: 0; overflow: hidden; background: var(--bg-main);">
+            <div class="flex-between p-20" style="border-bottom: 1px solid var(--border);">
+                <h2 class="text-white text-14 m-0 uppercase">ДЕТАЛИ ЧЕКА <span class="gold-text" id="audit-id">#000</span></h2>
+                <div class="modal-close" onclick="app.closeModals()">✕</div>
+            </div>
+            <div class="p-20 flex-column gap-20" style="max-height: 70vh; overflow-y: auto;">
+                <div class="flex-between">
+                    <div><div class="muted-text text-10">СТОЛ</div><div class="text-18 bold text-white" id="audit-table">--</div></div>
+                    <div class="text-right"><div class="muted-text text-10">СУММА ИТОГО</div><div class="text-24 bold gold-text" id="audit-total">0 ₸</div></div>
+                </div>
+                <div class="receipt-divider m-0"></div>
+                <div>
+                    <div class="muted-text text-10 mb-10">ДЕТАЛИЗАЦИЯ</div>
+                    <div class="flex-between mb-5"><span class="text-white text-12">Гость</span><span class="text-white text-12" id="audit-guest"></span></div>
+                    <div class="flex-between mb-5"><span class="text-white text-12">Аренда (<span id="audit-time"></span>)</span><span class="text-white text-12" id="audit-rent">0 ₸</span></div>
+                    <div class="flex-between mb-5"><span class="text-white text-12">Бар</span><span class="text-white text-12" id="audit-bar">0 ₸</span></div>
+                    <div class="flex-between mt-10 pt-10" style="border-top: 1px dashed var(--border);"><span class="text-white text-12">Оплата</span><span class="badge badge-green" id="audit-method">--</span></div>
+                    <div class="flex-between mt-5"><span class="text-white text-12">Кассир</span><span class="text-white text-12 muted-text" id="audit-admin">--</span></div>
+                </div>
+            </div>
+            <div class="p-20 flex-row gap-10" style="border-top: 1px solid var(--border);">
+                <button class="btn-dark flex-1">🖨 ПЕЧАТЬ</button>
+                <button class="btn-danger flex-1" onclick="app.ui.toast('Возврат заблокирован', 'danger')">❌ ВОЗВРАТ</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-receipt" class="overlay hidden">
         <div class="receipt-card">
             <div class="text-center mb-15">
@@ -368,6 +400,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/app.js?v=28.0"></script>
+    <script type="module" src="js/app.js?v=29.0"></script>
 </body>
 </html>
