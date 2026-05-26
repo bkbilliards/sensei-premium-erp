@@ -1,151 +1,367 @@
-export function initTables(app, supabase) {
-    const $ = i => document.getElementById(i);
+import { supabase } from "../supabase.js";
 
-    return {
-        render: () => {
-            const grid = $('tablesGrid');
-            if (!grid) return;
-            if (!app.state.tables || app.state.tables.length === 0) return;
+let realtimeChannel = null;
+let tablesData = [];
+let timers = {};
 
-            grid.innerHTML = app.state.tables.sort((a,b)=>a.id-b.id).map(t => {
-                let isPlaying = t.status === 'В ИГРЕ';
-                let isPaused = t.paused;
-                let cls = isPlaying ? (isPaused ? 'paused' : 'playing') : 'free';
-                let rentCost = isPlaying ? app.math.getCost(t) : 0;
-                let barCost = t.bar_amount || 0;
-                let totalCost = rentCost + barCost;
-                
-                let btnsFree = `
-                    <button class="btn-gold flex-1" onclick="app.tables.quickStart(${t.id})">▶ ПУСК</button>
-                    <button class="btn-dark" style="width: 50px;" onclick="app.ui.toast('Бронь', 'warning')">📅</button>
-                    <button class="btn-dark" style="width: 50px;" onclick="app.tables.openManage(${t.id})">⚙</button>`;
-                
-                let btnsActive = `
-                    <button class="btn-dark" style="width: 50px;" onclick="app.tables.togglePause(${t.id})">${isPaused ? '▶' : '⏸'}</button>
-                    <button class="btn-dark" style="flex: 1;" onclick="app.tables.openBarForTable(${t.id})">🍹 БАР</button>
-                    <button class="btn-danger" style="flex: 1;" onclick="app.tables.openStopPanel(${t.id})">💳 ОПЛАТА</button>
-                    <button class="btn-dark" style="width: 50px;" onclick="app.tables.openManage(${t.id})">⚙</button>`;
+const HOUR_RATE_DAY = 2500;
+const HOUR_RATE_NIGHT = 3000;
 
-                return `
-                <div class="table-card ${cls}">
-                    <div class="table-cloth"></div>
-                    <div class="table-content flex-column h-100">
-                        
-                        <div class="flex-between align-center mb-10">
-                            <span class="t-num"><span class="t-status-dot"></span>СТОЛ ${t.id}</span>
-                            ${isPlaying ? `<span class="badge" style="background: rgba(0,0,0,0.5);"><span class="icon text-10">👤</span> ${t.active_check_id || 'Гость'}</span>` : ''}
-                        </div>
-                        
-                        <div class="t-center-info my-auto">
-                            ${isPlaying ? `
-                                <div class="t-timer font-mono" id="timer-${t.id}">00:00:00</div>
-                                <div class="flex-row justify-center gap-10 mt-5">
-                                    <span class="t-cost gold-text font-mono">${totalCost.toLocaleString()} ₸</span>
-                                </div>
-                                ${barCost > 0 ? `<div class="muted-text text-10 mt-5">БАР: ${barCost.toLocaleString()} ₸</div>` : ''}
-                            ` : `
-                                <div class="t-idle-text muted-text">СВОБОДЕН</div>
-                            `}
-                        </div>
-                        
-                        <div class="flex-row mt-auto pt-15" style="border-top: 1px solid rgba(255,255,255,0.05);">
-                            ${isPlaying ? btnsActive : btnsFree}
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-        },
+const container = document.getElementById("tables-container");
+const liveCenter = document.getElementById("live-center");
 
-        quickStart: async (id) => {
-            app.ui.playSound('start');
-            await supabase.from('tables').update({ 
-                status: 'В ИГРЕ', started_at: Date.now(), accumulated_cost: 0, accumulated_time: 0, bar_amount: 0, paused: false,
-                current_players: 2, active_check_id: `Гость`
-            }).eq('id', id);
-            app.ui.toast(`Стол ${id} запущен`, 'success');
-            app.logActivity(`Запущен Стол ${id}`, '🟢');
-        },
+function toast(message, type = "success") {
+    const toast = document.createElement("div");
 
-        openManage: (id) => {
-            let t = app.state.tables.find(x => x.id === id);
-            $('manage-table-id').innerText = id;
-            
-            if (t.status === 'В ИГРЕ') {
-                $('manage-actions-active').classList.remove('hidden');
-                $('manage-actions-free').classList.add('hidden');
-                let ms = (t.accumulated_time || 0) + (Date.now() - t.started_at);
-                $('manage-timer').innerText = app.math.formatTime(ms);
-                $('manage-cost').innerText = (app.math.getCost(t) + (t.bar_amount || 0)) + ' ₸';
-            } else {
-                $('manage-actions-active').classList.add('hidden');
-                $('manage-actions-free').classList.remove('hidden');
-                $('manage-timer').innerText = '--:--:--';
-                $('manage-cost').innerText = t.accumulated_cost ? t.accumulated_cost + ' ₸' : 'Ожидание';
-            }
-            app.ui.openSidePanel('side-manage-table');
-        },
+    toast.className = `toast toast-${type}`;
+    toast.innerText = message;
 
-        togglePause: async (id) => {
-            let t = app.state.tables.find(x => x.id === id);
-            if (t.paused) {
-                await supabase.from('tables').update({ paused: false, started_at: Date.now() }).eq('id', id);
-                app.ui.toast(`Игра продолжена`, 'success');
-                app.logActivity(`Продолжение: Стол ${id}`, '▶');
-            } else {
-                let ms = (t.accumulated_time || 0) + (Date.now() - t.started_at);
-                let cost = app.math.getCost(t);
-                await supabase.from('tables').update({ paused: true, accumulated_time: ms, accumulated_cost: cost, started_at: null }).eq('id', id);
-                app.ui.toast(`Стол на паузе`, 'warning');
-                app.logActivity(`Пауза: Стол ${id}`, '⏸');
-            }
-        },
+    document.body.appendChild(toast);
 
-        togglePauseFromManage: () => {
-            let id = parseInt($('manage-table-id').innerText);
-            app.tables.togglePause(id);
-            app.ui.closeSidePanel('side-manage-table');
-        },
+    setTimeout(() => {
+        toast.classList.add("show");
+    }, 50);
 
-        openBarForTable: (id) => {
-            app.switchTab('stock');
-            let select = $('pos-target');
-            if(select) { select.value = id; if(app.pos) app.pos.updateTargetUI(); }
-        },
+    setTimeout(() => {
+        toast.classList.remove("show");
 
-        openStopPanel: (id) => {
-            let t = app.state.tables.find(x => x.id === id);
-            let rent = app.math.getCost(t);
-            let bar = t.bar_amount || 0;
-            $('stop-table-id').innerText = id;
-            $('stop-rent-sum').innerText = rent.toLocaleString() + ' ₸';
-            $('stop-bar-sum').innerText = bar.toLocaleString() + ' ₸';
-            $('stop-total-sum').innerText = (rent + bar).toLocaleString() + ' ₸';
-            $('stop-guest-name').value = t.active_check_id || '';
-            app.ui.openSidePanel('side-stop-table');
-        },
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
 
-        confirmStop: async () => {
-            let id = parseInt($('stop-table-id').innerText);
-            let name = $('stop-guest-name').value.trim() || `Гость ${id}`;
-            let t = app.state.tables.find(x => x.id === id);
-            let rent = app.math.getCost(t);
-            let bar = t.bar_amount || 0;
-            let total = rent + bar;
-            let playedMs = (t.accumulated_time || 0) + (Date.now() - t.started_at);
-
-            await supabase.from('active_checks').insert([{
-                id: Date.now(), table_id: id.toString(), guest_name: name, time_amount: rent, bar_amount: bar, total: total, created_by: app.session.user.name, 
-                created_at: new Date().toISOString(), played_ms: playedMs 
-            }]);
-
-            await supabase.from('tables').update({ 
-                status: 'СВОБОДЕН', started_at: null, accumulated_cost: total, accumulated_time: 0, bar_amount: 0, paused: false, active_check_id: null 
-            }).eq('id', id);
-
-            app.ui.closeSidePanel('side-stop-table');
-            app.ui.playSound('pay');
-            app.ui.toast(`Счет передан на кассу`, 'success');
-            app.logActivity(`Остановлен: Стол ${id}`, '⏹');
-        }
-    };
+    }, 3000);
 }
+
+function logLiveEvent(text) {
+
+    if (!liveCenter) return;
+
+    const item = document.createElement("div");
+
+    item.className = "live-event";
+
+    const now = new Date();
+
+    item.innerHTML = `
+        <span>${now.toLocaleTimeString()}</span>
+        <strong>${text}</strong>
+    `;
+
+    liveCenter.prepend(item);
+}
+
+function getRate() {
+
+    const hour = new Date().getHours();
+
+    if (hour >= 14 && hour < 18) {
+        return HOUR_RATE_DAY;
+    }
+
+    return HOUR_RATE_NIGHT;
+}
+
+function formatTime(seconds) {
+
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+
+    return `
+        ${String(h).padStart(2, "0")}:
+        ${String(m).padStart(2, "0")}:
+        ${String(s).padStart(2, "0")}
+    `;
+}
+
+async function loadTables() {
+
+    const { data, error } = await supabase
+        .from("tables")
+        .select("*")
+        .order("id");
+
+    if (error) {
+
+        toast("Ошибка загрузки столов", "error");
+        console.error(error);
+
+        return;
+    }
+
+    tablesData = data;
+
+    renderTables();
+}
+
+function getStatusClass(status) {
+
+    switch (status) {
+
+        case "PLAYING":
+            return "table-playing";
+
+        case "PAUSED":
+            return "table-paused";
+
+        case "BOOKED":
+            return "table-booked";
+
+        case "PROBLEM":
+            return "table-problem";
+
+        default:
+            return "table-free";
+    }
+}
+
+function renderTables() {
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    tablesData.forEach(table => {
+
+        const card = document.createElement("div");
+
+        card.className = `
+            premium-table
+            ${getStatusClass(table.status)}
+        `;
+
+        const seconds = table.accumulated_time || 0;
+
+        const total = table.accumulated_cost || 0;
+
+        card.innerHTML = `
+
+            <div class="table-top">
+
+                <div class="table-name">
+                    🎱 СТОЛ ${table.id}
+                </div>
+
+                <div class="table-status">
+                    ${table.status}
+                </div>
+
+            </div>
+
+            <div class="table-center">
+
+                <div class="table-timer">
+                    ${formatTime(seconds)}
+                </div>
+
+                <div class="table-price">
+                    ${total} ₸
+                </div>
+
+            </div>
+
+            <div class="table-actions">
+
+                ${
+                    table.status === "FREE"
+                    ?
+                    `
+                    <button
+                        class="btn btn-start"
+                        onclick="window.startTable(${table.id})"
+                    >
+                        ▶ ПУСК
+                    </button>
+                    `
+                    :
+                    `
+                    <button
+                        class="btn btn-stop"
+                        onclick="window.stopTable(${table.id})"
+                    >
+                        ⏹ ЗАВЕРШИТЬ
+                    </button>
+
+                    <button
+                        class="btn btn-pause"
+                        onclick="window.pauseTable(${table.id})"
+                    >
+                        ⏸ ПАУЗА
+                    </button>
+                    `
+                }
+
+            </div>
+
+        `;
+
+        container.appendChild(card);
+
+        if (table.status === "PLAYING") {
+            startLocalTimer(table.id);
+        }
+    });
+}
+
+function startLocalTimer(tableId) {
+
+    if (timers[tableId]) return;
+
+    timers[tableId] = setInterval(async () => {
+
+        const table = tablesData.find(t => t.id === tableId);
+
+        if (!table) return;
+
+        if (table.status !== "PLAYING") {
+
+            clearInterval(timers[tableId]);
+
+            delete timers[tableId];
+
+            return;
+        }
+
+        table.accumulated_time += 1;
+
+        const pricePerSecond = getRate() / 3600;
+
+        table.accumulated_cost += pricePerSecond;
+
+        renderTables();
+
+    }, 1000);
+}
+
+window.startTable = async function(tableId) {
+
+    toast("Запуск стола...", "loading");
+
+    const { error } = await supabase
+        .from("tables")
+        .update({
+            status: "PLAYING",
+            started_at: Date.now()
+        })
+        .eq("id", tableId);
+
+    if (error) {
+
+        toast("Ошибка запуска", "error");
+
+        return;
+    }
+
+    toast("Стол запущен");
+
+    logLiveEvent(`Стол ${tableId} стартовал`);
+}
+
+window.pauseTable = async function(tableId) {
+
+    const table = tablesData.find(t => t.id === tableId);
+
+    if (!table) return;
+
+    const newStatus =
+        table.status === "PAUSED"
+        ? "PLAYING"
+        : "PAUSED";
+
+    const { error } = await supabase
+        .from("tables")
+        .update({
+            status: newStatus
+        })
+        .eq("id", tableId);
+
+    if (error) {
+
+        toast("Ошибка паузы", "error");
+
+        return;
+    }
+
+    toast("Статус обновлен");
+
+    logLiveEvent(`Стол ${tableId}: ${newStatus}`);
+}
+
+window.stopTable = async function(tableId) {
+
+    const table = tablesData.find(t => t.id === tableId);
+
+    if (!table) return;
+
+    const confirmClose = confirm(`
+        Завершить стол ${tableId}?
+        Сумма: ${Math.floor(table.accumulated_cost)} ₸
+    `);
+
+    if (!confirmClose) return;
+
+    const { error } = await supabase
+        .from("tables")
+        .update({
+            status: "FREE",
+            accumulated_time: 0,
+            accumulated_cost: 0,
+            started_at: null
+        })
+        .eq("id", tableId);
+
+    if (error) {
+
+        toast("Ошибка завершения", "error");
+
+        return;
+    }
+
+    toast("Стол завершен");
+
+    logLiveEvent(`Стол ${tableId} завершен`);
+}
+
+function subscribeRealtime() {
+
+    realtimeChannel = supabase
+        .channel("tables-live")
+
+        .on(
+            "postgres_changes",
+            {
+                event: "*",
+                schema: "public",
+                table: "tables"
+            },
+            payload => {
+
+                const updated = payload.new;
+
+                const index = tablesData.findIndex(
+                    t => t.id === updated.id
+                );
+
+                if (index !== -1) {
+                    tablesData[index] = updated;
+                }
+
+                renderTables();
+            }
+        )
+
+        .subscribe(status => {
+
+            console.log("Realtime:", status);
+
+            if (status === "SUBSCRIBED") {
+
+                toast("Realtime подключен");
+
+                logLiveEvent("Realtime активирован");
+            }
+        });
+}
+
+loadTables();
+subscribeRealtime();
