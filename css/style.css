@@ -6,8 +6,11 @@
 }
 
 * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-body { background: var(--bg-main); color: var(--white); font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; overflow: hidden; height: 100vh;}
+body { background: var(--bg-main); color: var(--white); font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; overflow: hidden; height: 100vh; transition: filter 0.5s ease;}
 .billiard-vibe { background: radial-gradient(circle at 50% -25%, #0B1910 0%, var(--bg-main) 55%); background-attachment: fixed; }
+
+/* NIGHT SHIFT MODE (EYE CARE) */
+body.night-mode { filter: brightness(0.85) contrast(0.95); }
 
 .hidden { display: none !important; } .hide-desktop { display: none; }
 .text-center { text-align: center; } .text-right { text-align: right; }
@@ -24,10 +27,10 @@ body { background: var(--bg-main); color: var(--white); font-family: 'Montserrat
 .border-bottom { border-bottom: 1px solid var(--border); }
 .flex-row { display: flex; flex-direction: row; gap: 10px; flex-wrap: wrap; } .align-center { align-items: center; } .align-end { align-items: flex-end; } .justify-center { justify-content: center; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
-.flex-column { display: flex; flex-column: column; } .w-100 { width: 100%; } .h-100 { height: 100%; } .flex-1 { flex: 1; } .gap-5 { gap: 5px; } .gap-8 { gap: 8px; } .gap-10 { gap: 10px; } .gap-15 { gap: 15px; } .gap-20 { gap: 20px; } .gap-30 { gap: 30px; }
+.flex-column { display: flex; flex-direction: column; } .w-100 { width: 100%; } .h-100 { height: 100%; } .flex-1 { flex: 1; } .gap-5 { gap: 5px; } .gap-8 { gap: 8px; } .gap-10 { gap: 10px; } .gap-15 { gap: 15px; } .gap-20 { gap: 20px; } .gap-30 { gap: 30px; }
 
-/* КНОПКИ */
-button { cursor: pointer; border-radius: 6px; font-weight: 800; font-size: 11px; text-transform: uppercase; transition: 0.15s; font-family: inherit; display: flex; align-items: center; justify-content: center; border: none; letter-spacing: 1px; }
+/* КНОПКИ С RIPPLE/HOVER */
+button { cursor: pointer; border-radius: 6px; font-weight: 800; font-size: 11px; text-transform: uppercase; transition: 0.15s; font-family: inherit; display: flex; align-items: center; justify-content: center; border: none; letter-spacing: 1px; position: relative; overflow: hidden; }
 button:active { transform: scale(0.97); opacity: 0.9; }
 .btn-gold { background: var(--gold); color: #000; padding: 12px 16px; } 
 .btn-gold:hover { background: var(--gold-light); box-shadow: 0 0 15px rgba(164, 132, 37, 0.35);}
@@ -62,19 +65,20 @@ button:active { transform: scale(0.97); opacity: 0.9; }
 .tab-pane { display: none; height: 100%; width: 100%; }
 .tab-pane.active { display: flex; }
 
-/* 🎱 БИЛЬЯРДНЫЙ СТОЛ (TRUE TOP-VIEW ARCHITECTURE) */
+/* 🎱 БИЛЬЯРДНЫЙ СТОЛ (PREMIUM TOP-VIEW GLOW) */
 .grid-layout-hall { display: grid; grid-template-columns: 1fr 340px; gap: 30px; align-items: start; height: 100%; }
 .right-control-panel { display: flex; flex-direction: column; height: 100%; overflow: hidden;}
 .map-view-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 20px; padding-bottom: 50px;}
 
-.table-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; transition: all 0.25s ease; position: relative; overflow: hidden; min-height: 245px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);}
-.table-cloth { position: absolute; inset: 12px; border-radius: 6px; background: #13171D; opacity: 1; transition: background 0.4s ease, box-shadow 0.4s ease; pointer-events: none; z-index: 0; border: 1px solid #1E252E;}
+.table-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; transition: all 0.3s ease; position: relative; overflow: hidden; min-height: 245px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);}
+.table-cloth { position: absolute; inset: 12px; border-radius: 6px; background: #13171D; opacity: 1; transition: background 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease; pointer-events: none; z-index: 0; border: 1px solid #1E252E;}
 
-/* Изменение текстурного свечения сукна по статусу */
-.table-card.playing { border-color: rgba(63, 185, 80, 0.25); box-shadow: 0 0 15px rgba(63, 185, 80, 0.08); }
-.table-card.playing .table-cloth { background: #0E2416; border-color: #1A3E26; box-shadow: inset 0 0 40px rgba(0,0,0,0.85); }
-.table-card.paused { border-color: rgba(210, 153, 34, 0.25); }
-.table-card.paused .table-cloth { background: #261B0D; border-color: #3E2D16; box-shadow: inset 0 0 40px rgba(0,0,0,0.85); }
+/* Изменение текстурного свечения сукна по статусу (GLOW) */
+.table-card.playing { border-color: rgba(63, 185, 80, 0.4); box-shadow: 0 0 25px rgba(63, 185, 80, 0.15); }
+.table-card.playing .table-cloth { background: #0E2416; border-color: #1A3E26; box-shadow: inset 0 0 40px rgba(0,0,0,0.9); }
+.table-card.paused { border-color: rgba(210, 153, 34, 0.3); }
+.table-card.paused .table-cloth { background: #261B0D; border-color: #3E2D16; box-shadow: inset 0 0 40px rgba(0,0,0,0.9); }
+.night-mode .table-card.playing .table-cloth { box-shadow: inset 0 0 30px rgba(0,0,0,0.95); } /* Глубже тень ночью */
 
 .table-content { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100%; }
 .t-num { font-size: 15px; font-weight: 800; color: #767E8A; display: flex; align-items: center; gap: 8px;}
@@ -102,7 +106,7 @@ button:active { transform: scale(0.97); opacity: 0.9; }
 .pos-main { display: flex; flex-direction: column; overflow: hidden; height: 100%;}
 .pos-dense-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; overflow-y: auto; padding-right: 5px; align-content: start;}
 .pos-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 15px 10px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; position: relative; overflow: hidden;}
-.pos-item:hover { border-color: rgba(212, 175, 55, 0.4); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.4);}
+.pos-item:hover { border-color: rgba(164, 132, 37, 0.4); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.4);}
 .pos-item.out-of-stock { opacity: 0.4; filter: grayscale(1); pointer-events: none;}
 .pos-item-name { font-size: 11px; font-weight: 800; color: var(--white); line-height: 1.2; height: 26px; overflow: hidden;}
 .pos-item-price { font-size: 14px; font-weight: 900; color: var(--gold); font-family: 'JetBrains Mono', monospace;}
@@ -136,10 +140,10 @@ button:active { transform: scale(0.97); opacity: 0.9; }
 .pay-tag.qr { background: rgba(56, 139, 253, 0.1); color: var(--blue); border: 1px solid rgba(56, 139, 253, 0.3);}
 .pay-tag.debt { background: rgba(248, 81, 73, 0.1); color: var(--danger); border: 1px solid rgba(248, 81, 73, 0.3);}
 
-/* СИСТЕМНЫЕ СТЕКЛЯННЫЕ МОДАЛКИ С РАЗМЫТИЕМ ЗАДНЕГО ПЛАНА (BLUR BACKGROUND) */
-.overlay { position: fixed; inset: 0; background: rgba(4, 6, 8, 0.82); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100000; display: flex; align-items: center; justify-content: center; }
-.side-panel { position: fixed; top: 0; right: -100%; width: 400px; height: 100vh; background: var(--bg-card); z-index: 2000; transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); padding: 30px; display: flex; flex-direction: column; border-left: 1px solid var(--border); box-shadow: -10px 0 50px rgba(0,0,0,0.6); }
-.side-panel.active { right: 0; }
+/* СИСТЕМНЫЕ СТЕКЛЯННЫЕ МОДАЛКИ (BLUR BACKGROUND) */
+.overlay { position: fixed; inset: 0; background: rgba(4, 6, 8, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100000; display: flex; align-items: center; justify-content: center; }
+.modal-close { font-size: 24px; color: var(--gray); cursor: pointer; width: 40px; height: 40px; border-radius: 8px; background: #090B0E; display: flex; align-items: center; justify-content: center; transition: 0.2s;}
+.modal-close:hover { background: #1C242E; color: var(--white); }
 
 /* ИНПУТЫ И ТОСТЫ */
 .input-group { text-align: left; margin-bottom: 20px; width: 100%; }
@@ -152,7 +156,7 @@ button:active { transform: scale(0.97); opacity: 0.9; }
 .toast-danger { border-color: rgba(248, 81, 73, 0.4); color: var(--danger); }
 @keyframes toastUp { from { transform: translate(-50%, 20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 
-/* TRUE MOBILE UX (ОТДЕЛЬНАЯ МОБИЛЬНАЯ ЛОГИКА И ВЕРСТКА ПО ТЗ) */
+/* TRUE MOBILE UX */
 .mobile-bottom-nav { display: none; }
 @media (max-width: 1000px) {
     body { overflow-y: auto; }
@@ -168,7 +172,7 @@ button:active { transform: scale(0.97); opacity: 0.9; }
     .pos-cart { position: relative; top: 0; height: auto; margin-top: 20px; }
     .archive-table { display: block; overflow-x: auto; white-space: nowrap; }
 
-    /* МАСШТАБ СТОЛОВ ПОД ПАЛЕЦ ОДНОЙ РУКИ */
+    /* ОГРОМНЫЕ СТОЛЫ НА ТЕЛЕФОНЕ */
     .map-view-container { grid-template-columns: 1fr; gap: 15px; } 
     .table-card { min-height: 275px; padding: 15px; }
     .table-cloth { inset: 8px; }
@@ -180,9 +184,9 @@ button:active { transform: scale(0.97); opacity: 0.9; }
     .m-nav-item { background: none; border: none; color: #5F6672; display: flex; flex-direction: column; align-items: center; font-size: 22px; gap: 4px; padding: 0; width: auto; height: auto;}
     .m-nav-item span { font-size: 9px; font-weight: 800; text-transform: uppercase;}
     .m-nav-item.active { color: var(--gold); }
-}
-
-@media print {
-    body * { visibility: hidden; }
-    .no-print { display: none !important; }
+    
+    .payment-row { flex-direction: column; align-items: stretch; padding: 15px;}
+    .payment-info { flex-direction: row; justify-content: space-between; width: 100%; margin-bottom: 10px;}
+    .payment-sum { text-align: left; font-size: 24px;}
+    .payment-actions { width: 100%; justify-content: space-between; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;}
 }
