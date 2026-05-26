@@ -2,11 +2,20 @@ export function initTables(app, supabase) {
     const $ = id => document.getElementById(id);
     return {
         load: async () => {
-            const { data } = await supabase.from('tables').select('*').order('id');
-            if(data) { app.state.tables = data; app.tables.render(); }
+            try {
+                const { data } = await supabase.from('tables').select('*').order('id');
+                if(data) { app.state.tables = data; app.tables.render(); }
+            } catch(e) { console.error("Tables Load Error:", e); }
         },
         render: () => {
             const grid = $('tablesGrid'); if (!grid || !app.state.tables) return;
+            
+            // Если столов в БД нет, создаем пустышки для UI
+            if (app.state.tables.length === 0) {
+                grid.innerHTML = '<div class="muted-text">Столы не найдены в БД Supabase.</div>';
+                return;
+            }
+
             grid.innerHTML = app.state.tables.map(t => {
                 let isPlaying = t.status === 'В ИГРЕ'; let isPaused = t.paused;
                 let cls = isPlaying ? (isPaused ? 'paused' : 'playing') : 'free';
@@ -25,16 +34,18 @@ export function initTables(app, supabase) {
                         <div class="t-center-info my-auto">
                             ${isPlaying ? `
                                 <div class="t-timer font-mono" id="timer-${t.id}">00:00:00</div>
-                                <div class="t-cost gold-text font-mono mt-5">${totalCost.toLocaleString()} ₸</div>
-                                ${t.bar_amount > 0 ? `<div class="muted-text text-10 mt-5">БАР: ${t.bar_amount.toLocaleString()} ₸</div>` : ''}
+                                <div class="t-cost gold-text font-mono mt-5" id="sum-${t.id}">${totalCost.toLocaleString()} ₸</div>
                             ` : `<div class="t-idle-text muted-text">СВОБОДЕН</div>`}
                         </div>
-                        <div class="flex-row mt-auto pt-15" style="border-top: 1px solid rgba(255,255,255,0.05);">${isPlaying ? btnsActive : btnsFree}</div>
+                        <div class="flex-row mt-auto pt-15" style="border-top: 1px solid rgba(255,255,255,0.05); z-index: 10;">
+                            ${isPlaying ? btnsActive : btnsFree}
+                        </div>
                     </div>
                 </div>`;
             }).join('');
         },
         start: async (id) => {
+            app.ui.playSound('start');
             try {
                 await supabase.from('tables').update({ status: 'В ИГРЕ', started_at: Date.now(), accumulated_cost: 0, accumulated_time: 0, bar_amount: 0, paused: false, active_check_id: 'Гость' }).eq('id', id);
                 app.ui.toast(`Стол ${id} запущен`, 'success');
