@@ -13,7 +13,6 @@ const app = {
         app.setupHotkeys(); 
         
         try {
-            // МНОГОУРОВНЕВЫЙ FAIL-SAFE ПЕРЕХВАТ ДАННЫХ ИЗ SUPABASE С ТРИГГЕРОМ ОШИБОК
             const { data: tables, error: e1 } = await supabase.from('tables').select('*').order('id');
             if(e1) throw e1;
             if(tables) { app.state.tables = tables; app.renderTables(); }
@@ -39,7 +38,7 @@ const app = {
             if(e6) throw e6;
             if(debts) { app.state.debts = debts; app.debts.render(); }
 
-            // REALTIME ПОДПИСКА НА ОТКРЫТЫЕ СОКЕТЫ ПОСТГРЕСА
+            // REALTIME СИНХРОНИЗАЦИЯ
             supabase.channel('public:tables').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tables' }, payload => {
                 const index = app.state.tables.findIndex(t => t.id === payload.new.id);
                 if(index !== -1) app.state.tables[index] = payload.new;
@@ -56,18 +55,37 @@ const app = {
 
             app.logActivity('Смена инициализирована ERP', '🔓');
 
+            setInterval(() => {
+                let clock = $('live-clock');
+                if (clock) clock.innerText = new Date().toLocaleTimeString('ru-RU').slice(0,5);
+                let shiftClock = $('shift-clock');
+                if (shiftClock && app.session.isAuth) {
+                    let ms = Date.now() - app.state.shiftStart;
+                    let h = Math.floor(ms / 3600000); let m = Math.floor((ms % 3600000) / 60000);
+                    shiftClock.innerText = `СМЕНА: ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+                }
+                app.tickTables();
+                app.checkNightMode(); // NIGHT SHIFT MODE
+            }, 1000);
+
         } catch (error) {
             console.error("Critical Connection Failure Core Engine:", error);
-            app.ui.toast(`Критический сбой БД: ${error.message || 'Проверьте SQL таблицы'}`, 'danger');
+            app.ui.toast(`Критический сбой БД. Оффлайн режим.`, 'danger');
         }
     },
 
-    // ПЕРЕХВАТ И АВТОМАТИЗАЦИЯ ГОРЯЧИХ КЛАВИШ ПО ТЗ
+    checkNightMode: () => {
+        const h = new Date().getHours();
+        if (h >= 22 || h < 6) document.body.classList.add('night-mode');
+        else document.body.classList.remove('night-mode');
+    },
+
     setupHotkeys: () => {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') app.closeModals();
             if (e.key === 'F1') { e.preventDefault(); app.confirmPayActiveCheck('НАЛ'); }
             if (e.key === 'F2') { e.preventDefault(); app.confirmPayActiveCheck('QR'); }
+            if (e.key === 'F3') { e.preventDefault(); app.confirmPayActiveCheck('ДОЛГ'); }
             if (e.key === ' ') { 
                 const m = $('modal-manage-table');
                 if (m && !m.classList.contains('hidden') && !$('m-actions-free').classList.contains('hidden')) {
@@ -84,12 +102,8 @@ const app = {
         } else {
             $('authScreen').classList.add('hidden'); $('appScreen').classList.remove('hidden');
             $('userName').innerText = app.session.user.name;
-            
-            if (app.session.user.role !== 'owner') {
-                $$('.owner-only').forEach(el => el.style.display = 'none');
-            } else {
-                $$('.owner-only').forEach(el => el.style.display = 'flex');
-            }
+            if (app.session.user.role !== 'owner') $$('.owner-only').forEach(el => el.style.display = 'none');
+            else $$('.owner-only').forEach(el => el.style.display = 'flex');
             app.renderTables(); app.renderChecks();
         }
     },
@@ -107,7 +121,7 @@ const app = {
                     app.ui.toast('Вход выполнен', 'success'); app.checkSession();
                 } else { app.ui.toast('Неверный PIN-код доступа', 'danger'); }
             };
-        } catch(e) { app.ui.toast('Ошибка авторизации кадров', 'danger'); }
+        } catch(e) {}
     },
 
     logout: () => { app.session.isAuth = false; app.session.user = null; app.saveSession(); location.reload(); },
@@ -116,7 +130,7 @@ const app = {
         toast: (msg, type='success') => {
             const c = $('toast-container'); if(!c) return;
             const t = document.createElement('div');
-            t.className = `toast toast-${type}`; t.innerText = msg;
+            t.className = type === 'danger' ? `toast toast-danger` : `toast`; t.innerText = msg;
             c.appendChild(t); setTimeout(() => t.remove(), 2500);
         },
         openModal: (id) => { $(id).classList.remove('hidden'); },
@@ -125,8 +139,8 @@ const app = {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator(); const gain = ctx.createGain();
                 osc.connect(gain); gain.connect(ctx.destination);
-                if(type === 'start') { osc.frequency.setValueAtTime(420, ctx.currentTime); osc.type = 'sine'; gain.gain.setValueAtTime(0.01, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25); osc.start(); osc.stop(ctx.currentTime + 0.25); }
-                if(type === 'pay') { osc.frequency.setValueAtTime(580, ctx.currentTime); osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08); osc.type = 'triangle'; gain.gain.setValueAtTime(0.01, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2); osc.start(); osc.stop(ctx.currentTime + 0.2); }
+                if(type === 'start') { osc.frequency.setValueAtTime(400, ctx.currentTime); osc.type = 'sine'; gain.gain.setValueAtTime(0.01, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3); osc.start(); osc.stop(ctx.currentTime + 0.3); }
+                if(type === 'pay') { osc.frequency.setValueAtTime(600, ctx.currentTime); osc.frequency.setValueAtTime(900, ctx.currentTime + 0.1); osc.type = 'triangle'; gain.gain.setValueAtTime(0.01, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2); osc.start(); osc.stop(ctx.currentTime + 0.2); }
             } catch(e){}
         }
     },
@@ -147,7 +161,6 @@ const app = {
         app.ui.toast('Инцидент зафиксирован и отправлен владельцу', 'danger'); app.closeModals();
     },
 
-    // 1. СТРОГИЙ ДВИЖОК ТАРИФИКАЦИИ И БИЛЬЯРДНЫХ СТОЛОВ
     renderTables: () => {
         const grid = $('tablesGrid'); if (!grid || !app.state.tables) return;
         grid.innerHTML = app.state.tables.sort((a,b)=>a.id-b.id).map(t => {
@@ -175,7 +188,7 @@ const app = {
                 const { error } = await supabase.from('tables').update({ status: 'В ИГРЕ', started_at: Date.now(), accumulated_cost: 0, accumulated_time: 0, bar_amount: 0, paused: false, active_check_id: `Гость` }).eq('id', id);
                 if(error) throw error;
                 app.ui.toast(`Стол ${id} переведен в статус ИГРАЕТ`, 'success'); app.logActivity(`Запущен Стол ${id}`, '🟢');
-            } catch(e) { app.ui.toast(`Ошибка Supabase: ${e.message}`, 'danger'); }
+            } catch(e) { app.ui.toast(`Ошибка: ${e.message}`, 'danger'); }
         },
         togglePause: async (id) => {
             let t = app.state.tables.find(x => x.id === id); if(!t) return;
@@ -264,12 +277,12 @@ const app = {
         if($('head-total')) $('head-total').innerText = (liveRevenue + liveBar).toLocaleString() + " ₸";
     },
 
-    // 2. БЛОК: POS-МОДУЛЬ БАРА
+    // 2. POS-МОДУЛЬ
     pos: {
         renderItems: (category = 'Все') => {
             const grid = $('pos-items-grid'); if(!grid) return;
             let items = app.state.inventory; if(category !== 'Все') items = items.filter(i => i.category === category);
-            if(items.length === 0) { grid.innerHTML = '<div class="muted-text">Позиции отсутствуют</div>'; return; }
+            if(items.length === 0) { grid.innerHTML = '<div class="muted-text">Каталог пуст</div>'; return; }
             grid.innerHTML = items.map(item => {
                 let stockClass = item.stock <= 0 ? 'danger' : (item.stock <= 5 ? 'warning' : 'success');
                 let isOut = item.stock <= 0 ? 'out-of-stock' : '';
@@ -279,6 +292,13 @@ const app = {
                     <div class="item-icon">${icon}</div><div class="pos-item-name">${item.name}</div><div class="pos-item-price">${item.price} ₸</div>
                     <div class="pos-add-btn">+ В КОРЗИНУ</div></div>`;
             }).join('');
+            
+            // Highlight active filter button
+            if($('pos-filter-buttons')) {
+                $$('#pos-filter-buttons button').forEach(b => b.classList.remove('active'));
+                let btn = document.querySelector(`button[data-cat="${category}"]`);
+                if(btn) btn.classList.add('active');
+            }
         },
         addToCart: (id) => {
             app.ui.playSound('start');
@@ -301,7 +321,7 @@ const app = {
         clearCart: () => { app.state.cart = []; app.pos.renderCart(); },
         renderCart: () => {
             const list = $('pos-cart-list'); const totalEl = $('pos-total'); if(!list || !totalEl) return;
-            let total = 0; if(app.state.cart.length === 0) { list.innerHTML = '<div class="muted-text text-center py-20">Заказ пуст</div>'; totalEl.innerText = '0 ₸'; return; }
+            let total = 0; if(app.state.cart.length === 0) { list.innerHTML = '<div class="muted-text text-center py-20">Формирование чека...</div>'; totalEl.innerText = '0 ₸'; return; }
             list.innerHTML = app.state.cart.map(c => {
                 total += (c.price * c.qty);
                 return `<div class="cart-item"><div class="cart-item-info"><div class="cart-item-name">${c.name}</div><div class="cart-item-price">${c.price} ₸</div></div>
@@ -309,30 +329,21 @@ const app = {
             }).join('');
             totalEl.innerText = total.toLocaleString() + ' ₸';
         },
-        updateTargetOptions: () => {
-            const select = $('pos-target'); if(!select) return;
-            let currentVal = select.value;
-            let html = '<option value="none">📍 БЫСТРЫЙ ЧЕК (ПРЯМАЯ ПРОДАЖА)</option>';
-            app.state.tables.forEach(t => { if(t.status === 'В ИГРЕ') html += `<option value="${t.id}">🎱 СТОЛ ${t.id} (${t.active_check_id})</option>`; });
-            select.innerHTML = html;
-            if(app.state.tables.find(t => t.id == currentVal && t.status === 'В ИГРЕ')) select.value = currentVal; else select.value = 'none';
-            app.updateTargetUI();
-        },
         checkout: async (method) => {
             if(app.state.cart.length === 0) return app.ui.toast('Корзина пуста', 'danger');
             let total = app.state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-            let guest = $('pos-guest').value.trim() || 'Прямой розничный покупатель';
+            let guest = $('pos-guest').value.trim() || 'Прямая продажа';
             app.ui.playSound('pay');
             try {
                 if (method === 'ДОЛГ') await supabase.from('debts').insert([{ guest_name: guest, amount: total, created_by: app.session.user.name }]);
-                await supabase.from('archived_checks').insert([{ id: Date.now(), table_id: 'БАР ПОДПИСЬ', guest_name: guest, time_amount: 0, bar_amount: total, total: total, pay_method: method, created_by: app.session.user.name }]);
+                await supabase.from('archived_checks').insert([{ id: Date.now(), table_id: 'БАР', guest_name: guest, time_amount: 0, bar_amount: total, total: total, pay_method: method, created_by: app.session.user.name }]);
                 for(let item of app.state.cart) {
                     let dbItem = app.state.inventory.find(i => i.id === item.id);
                     if(dbItem) await supabase.from('inventory').update({stock: dbItem.stock - item.qty}).eq('id', item.id);
                 }
-                app.ui.toast(`Продажа оформлена: ${method}`, 'success'); app.logActivity(`Продажа POS-бар: ${total} ₸ (${method})`, '🍹');
+                app.ui.toast(`Продажа оформлена: ${method}`, 'success'); app.logActivity(`Продажа POS: ${total} ₸ (${method})`, '🍹');
                 app.state.cart = []; app.pos.renderCart(); app.refreshInventoryCache();
-            } catch(e) { app.ui.toast('Критическая ошибка проведения чека', 'danger'); }
+            } catch(e) { app.ui.toast('Ошибка чека', 'danger'); }
         },
         sendToTable: async () => {
             let tableId = $('pos-target').value; if(tableId === 'none' || app.state.cart.length === 0) return;
@@ -345,16 +356,32 @@ const app = {
                     let dbItem = app.state.inventory.find(i => i.id === item.id);
                     if(dbItem) await supabase.from('inventory').update({stock: dbItem.stock - item.qty}).eq('id', item.id);
                 }
-                app.ui.toast(`Перенесено на Счёт Стола ${tableId}`, 'success'); app.state.cart = []; app.pos.renderCart(); app.refreshInventoryCache(); app.switchTab('hall');
-            } catch(e) { app.ui.toast('Ошибка привязки чека стола', 'danger'); }
+                app.ui.toast(`Перенесено на Стол ${tableId}`, 'success'); app.state.cart = []; app.pos.renderCart(); app.refreshInventoryCache(); app.switchTab('hall');
+            } catch(e) { app.ui.toast('Ошибка привязки чека', 'danger'); }
         }
     },
 
-    // 3. БЛОК: КАССОВОЕ ОЖИДАНИЕ СЧЕТОВ
+    updateTargetOptions: () => {
+        const select = $('pos-target'); if(!select) return;
+        let currentVal = select.value;
+        let html = '<option value="none">📍 БЫСТРЫЙ ЧЕК (БАР)</option>';
+        app.state.tables.forEach(t => { if(t.status === 'В ИГРЕ') html += `<option value="${t.id}">🎱 СТОЛ ${t.id} (${t.active_check_id || ''})</option>`; });
+        select.innerHTML = html;
+        if(app.state.tables.find(t => t.id == currentVal && t.status === 'В ИГРЕ')) select.value = currentVal; else select.value = 'none';
+        app.updateTargetUI();
+    },
+
+    updateTargetUI: () => {
+        let val = $('pos-target').value;
+        if(val === 'none') { $('pos-actions-quick').classList.remove('hidden'); $('pos-actions-table').classList.add('hidden'); } 
+        else { $('pos-actions-quick').classList.add('hidden'); $('pos-actions-table').classList.remove('hidden'); }
+    },
+
+    // 3. КАССА ОЖИДАНИЯ
     renderChecks: () => {
         const list = $('waiting-payments-list'); const count = $('waiting-count'); if (!list || !count) return;
         count.innerText = app.state.activeChecks.length;
-        if (app.state.activeChecks.length === 0) { list.innerHTML = '<div class="muted-text py-10 w-100">Все счета закрыты. Очередь пуста.</div>'; return; }
+        if (app.state.activeChecks.length === 0) { list.innerHTML = '<div class="muted-text py-10 w-100">Все счета закрыты ✅</div>'; return; }
         list.innerHTML = app.state.activeChecks.map(c => `
             <div class="payment-row">
                 <div class="payment-info"><span class="badge" style="background: rgba(255,255,255,0.05);">🎱 Стол ${c.table_id}</span><b class="text-white text-12">${c.guest_name}</b></div>
@@ -376,12 +403,11 @@ const app = {
             if (method === 'ДОЛГ') await supabase.from('debts').insert([{ guest_name: checkToArchive.guest_name || 'Гость', amount: checkToArchive.total, created_by: app.session.user.name }]);
             await supabase.from('archived_checks').insert([{ id: checkToArchive.id, table_id: checkToArchive.table_id, guest_name: checkToArchive.guest_name, time_amount: checkToArchive.time_amount, bar_amount: checkToArchive.bar_amount, total: checkToArchive.total, pay_method: method, created_by: app.session.user.name, played_ms: checkToArchive.played_ms }]);
             await supabase.from('active_checks').delete().eq('id', id);
-            app.closeModals(); app.ui.toast(`Проведено: ${method}`, 'success'); app.logActivity(`Касса закрыта: ${checkToArchive.total} ₸ (${method})`, '🟢');
+            app.closeModals(); app.ui.toast(`Оплата: ${method}`, 'success'); app.logActivity(`Касса закрыта: ${checkToArchive.total} ₸ (${method})`, '🟢');
             app.refreshFinanceArchiveCache();
-        } catch(e) { app.ui.toast('Ошибка транзакции закрытия', 'danger'); }
+        } catch(e) { app.ui.toast('Ошибка транзакции', 'danger'); }
     },
 
-    // ВНУТРЕННИЙ ОНЛАЙН-СИНХРОНИЗАТОР КЭША ТАБЛИЦ ДЛЯ ИСКЛЮЧЕНИЯ ПУСТЫХ СТРАНИЦ ПО ТЗ
     refreshInventoryCache: async () => {
         const { data } = await supabase.from('inventory').select('*').eq('is_active', true).order('name');
         if(data) { app.state.inventory = data; app.pos.renderItems(); app.inventory.render(); }
@@ -396,7 +422,7 @@ const app = {
 
     renderArchive: () => {
         const list = $('archive-list'); if (!list) return;
-        let total = 0; if (app.state.archivedChecks.length === 0) { list.innerHTML = '<tr><td colspan="8" class="text-center py-15 muted-text">Сегодня чеков еще нет</td></tr>'; return; }
+        let total = 0; if (app.state.archivedChecks.length === 0) { list.innerHTML = '<tr><td colspan="8" class="text-center py-15 muted-text">Сегодня чеков еще нет 🎱</td></tr>'; return; }
         list.innerHTML = app.state.archivedChecks.map(c => {
             total += Number(c.total); let tc = c.pay_method === 'НАЛ' ? 'nal' : (c.pay_method === 'QR' ? 'qr' : 'debt');
             return `<tr><td>${new Date(c.closed_at).toLocaleTimeString('ru-RU').slice(0,5)}</td><td><b>Стол ${c.table_id}</b></td><td>${c.guest_name}</td>
@@ -406,7 +432,7 @@ const app = {
         if($('f-total')) $('f-total').innerText = total.toLocaleString() + ' ₸';
     },
 
-    // 4. ДОПОЛНИТЕЛЬНЫЕ МОДУЛИ ERP (УЧЕТ)
+    // 4. ДОПОЛНИТЕЛЬНЫЕ МОДУЛИ
     inventory: {
         render: () => {
             const list = $('inventory-list'); if(!list) return;
@@ -416,38 +442,43 @@ const app = {
         populateSelect: () => { const sel = $('pur-item'); if(sel) sel.innerHTML = app.state.inventory.map(i => `<option value="${i.id}">${i.name}</option>`).join(''); },
         addPurchase: async () => {
             let id = parseInt($('pur-item').value); let qty = parseInt($('pur-qty').value); let cost = parseFloat($('pur-cost').value);
-            if(!qty || qty <= 0 || !cost) return app.ui.toast('Заполните ордер склада', 'danger');
+            if(!qty || qty <= 0 || !cost) return app.ui.toast('Заполните ордер', 'danger');
             try {
                 let item = app.state.inventory.find(i => i.id === id);
                 await supabase.from('purchases').insert([{ item_name: item.name, quantity: qty, cost_price: cost, created_by: app.session.user.name }]);
                 await supabase.from('inventory').update({ stock: item.stock + qty, cost_price: cost }).eq('id', id);
-                app.ui.toast('Баланс склада пополнен', 'success'); app.closeModals(); app.refreshInventoryCache();
-            } catch(e) { app.ui.toast('Ошибка приходного ордера', 'danger'); }
+                app.ui.toast('Склад пополнен', 'success'); app.closeModals(); app.refreshInventoryCache();
+            } catch(e) { app.ui.toast('Ошибка прихода', 'danger'); }
         }
     },
 
     crm: {
         render: () => {
             const list = $('crm-list'); if(!list) return;
-            if(app.state.guests.length === 0) { list.innerHTML = '<tr><td colspan="5" class="text-center py-15 muted-text">Добавьте первого гостя CRM</td></tr>'; return; }
-            list.innerHTML = app.state.guests.map(g => `<tr><td><b>${g.name}</b></td><td class="font-mono">${g.phone || '--'}</td><td class="gold-text">${g.discount_percent}%</td><td class="font-mono">${Number(g.total_spent).toLocaleString()} ₸</td><td class="text-right"><span class="badge badge-green">GOLD ПРОФИЛЬ</span></td></tr>`).join('');
+            if(app.state.guests.length === 0) { list.innerHTML = '<tr><td colspan="5" class="text-center py-15 muted-text">Добавьте первого гостя в CRM 👤</td></tr>'; return; }
+            list.innerHTML = app.state.guests.map(g => `<tr><td><b>${g.name}</b></td><td class="font-mono">${g.phone || '--'}</td><td class="gold-text">${g.discount_percent}%</td><td class="font-mono">${Number(g.total_spent).toLocaleString()} ₸</td><td class="text-right"><span class="badge badge-green">АКТИВЕН</span></td></tr>`).join('');
+        },
+        populateDatalist: () => {
+            const dl = $('guest-datalist');
+            if(!dl) return;
+            dl.innerHTML = app.state.guests.map(g => `<option value="${g.name}">Скидка: ${g.discount_percent}%</option>`).join('');
         },
         addGuest: async () => {
             let name = $('crm-name').value.trim(); let phone = $('crm-phone').value.trim(); let discount = parseInt($('crm-discount').value) || 0;
-            if(!name) return app.ui.toast('Заполните карту гостя', 'danger');
+            if(!name) return app.ui.toast('Укажите имя', 'danger');
             try {
                 await supabase.from('guests').insert([{ name, phone, discount_percent: discount }]);
-                app.ui.toast('Анкета CRM успешно сохранена', 'success'); app.closeModals();
-                const { data } = await supabase.from('guests').select('*').order('name'); if(data) { app.state.guests = data; app.crm.render(); app.populateGuestDatalist(); }
-            } catch(e) { app.ui.toast('Ошибка базы CRM', 'danger'); }
+                app.ui.toast('Профиль сохранен', 'success'); app.closeModals();
+                const { data } = await supabase.from('guests').select('*').order('name'); if(data) { app.state.guests = data; app.crm.render(); app.crm.populateDatalist(); }
+            } catch(e) { app.ui.toast('Ошибка CRM', 'danger'); }
         }
     },
 
     debts: {
         render: () => {
             const list = $('debts-list'); if(!list) return;
-            if(app.state.debts.length === 0) { list.innerHTML = '<tr><td colspan="5" class="text-center py-15 muted-text">Активных задолженностей не зафиксировано</td></tr>'; return; }
-            list.innerHTML = app.state.debts.map(d => `<tr><td>${new Date(d.created_at).toLocaleDateString('ru-RU')}</td><td><b>${d.guest_name}</b></td><td class="danger-text bold font-mono">${Number(d.amount).toLocaleString()} ₸</td><td>${d.created_by}</td><td class="text-right"><button class="btn-dark btn-sm success-text ml-auto" onclick="app.debts.closeDebt(${d.id})">ПОГАСИТЬ СЧЁТ</button></td></tr>`).join('');
+            if(app.state.debts.length === 0) { list.innerHTML = '<tr><td colspan="5" class="text-center py-15 muted-text">Все долги закрыты ✅</td></tr>'; return; }
+            list.innerHTML = app.state.debts.map(d => `<tr><td>${new Date(d.created_at).toLocaleDateString('ru-RU')}</td><td><b>${d.guest_name}</b></td><td class="danger-text bold font-mono">${Number(d.amount).toLocaleString()} ₸</td><td>${d.created_by}</td><td class="text-right"><button class="btn-dark btn-sm success-text ml-auto" onclick="app.debts.closeDebt(${d.id})">ПОГАСИТЬ</button></td></tr>`).join('');
             let total = app.state.debts.reduce((sum, d) => sum + Number(d.amount), 0);
             if($('f-debts')) $('f-debts').innerText = total.toLocaleString() + ' ₸'; if($('head-debts')) $('head-debts').innerText = total.toLocaleString() + ' ₸';
         },
@@ -455,12 +486,11 @@ const app = {
             app.ui.playSound('pay');
             try {
                 await supabase.from('debts').update({ status: 'ПОГАШЕН' }).eq('id', id);
-                app.ui.toast('Транзакция погашения зафиксирована', 'success'); app.refreshFinanceArchiveCache();
-            } catch(e) { app.ui.toast('Ошибка гашения задолженности', 'danger'); }
+                app.ui.toast('Долг погашен', 'success'); app.refreshFinanceArchiveCache();
+            } catch(e) { app.ui.toast('Ошибка БД', 'danger'); }
         }
     },
 
-    // НАВИГАЦИОННАЯ СИСТЕМА ТАБОВ И ТРИГГЕРЫ UI
     switchTab: (tabId) => {
         $$('.nav-btn, .m-nav-item').forEach(b => b.classList.remove('active'));
         $$(`[data-tab="${tabId}"]`).forEach(b => b.classList.add('active'));
@@ -469,12 +499,13 @@ const app = {
         if(tabId === 'stock') app.pos.updateTargetOptions();
     },
 
-    updateTargetUI: () => app.pos.updateTargetUI(),
-
     setupNavigation: () => {
         window.app = app;
         $$('.nav-btn, .m-nav-item').forEach(btn => {
             btn.addEventListener('click', (e) => { if(e.currentTarget.dataset.tab) app.switchTab(e.currentTarget.dataset.tab); });
+        });
+        $$('#pos-filter-buttons button').forEach(btn => {
+            btn.addEventListener('click', (e) => { app.pos.renderItems(e.currentTarget.dataset.cat); });
         });
     }
 };
