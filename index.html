@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENSEI ERP X | Enterprise</title>
+    <title>SENSEI ERP X | Enterprise OS</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=JetBrains+Mono:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=36.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="billiard-vibe">
@@ -38,11 +38,10 @@
                 </div>
                 
                 <div class="header-stats hide-mobile flex-row gap-15">
-                    <div class="stat-item"><span class="muted-text">💵 ВЫРУЧКА</span><b id="head-total" class="gold-text text-14 font-mono">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">💵 ВЫРУЧКА ОБЩАЯ</span><b id="head-total" class="gold-text text-14 font-mono">0 ₸</b></div>
                     <div class="stat-item"><span class="muted-text">📱 QR ОПЛАТЫ</span><b id="head-qr" class="blue-text text-14 font-mono">0 ₸</b></div>
-                    <div class="stat-item"><span class="muted-text">🎱 АРЕНДА</span><b id="head-tables-rev" class="text-white text-14 font-mono">0 ₸</b></div>
-                    <div class="stat-item"><span class="muted-text">🍹 БАР</span><b id="head-bar" class="text-white text-14 font-mono">0 ₸</b></div>
-                    <div class="stat-item"><span class="muted-text">⚠ ДОЛГИ</span><b id="head-debts" class="danger-text text-14 font-mono">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">🎱 АРЕНДА ЗАЛА</span><b id="head-tables-rev" class="text-white text-14 font-mono">0 ₸</b></div>
+                    <div class="stat-item"><span class="muted-text">🍹 ВЫРУЧКА БАРА</span><b id="head-bar" class="text-white text-14 font-mono">0 ₸</b></div>
                 </div>
 
                 <div class="action-zone flex-column text-right gap-5 hide-mobile">
@@ -73,7 +72,7 @@
                     <div id="tablesGrid" class="map-view-container"></div>
                     <div class="mt-10 mb-40">
                         <h3 class="gold-text text-12 mb-15 uppercase letter-spacing flex-row align-center gap-10">
-                            <span>💳 ОЖИДАЮТ ОПЛАТЫ (КАССА)</span>
+                            <span>💳 ОЖИДАЮТ ОПЛАТЫ (ОЧЕРЕДЬ КАССЫ)</span>
                             <span class="badge badge-yellow" id="waiting-count">0</span>
                         </h3>
                         <div id="waiting-payments-list" class="payments-list flex-column gap-10"></div>
@@ -81,7 +80,7 @@
                 </div>
                 
                 <div class="right-control-panel hide-mobile">
-                    <div class="control-section mb-20">
+                    <div class="control-section mb-25">
                         <div class="muted-text mb-10">БЫСТРЫЙ ДОСТУП</div>
                         <div class="control-actions-grid">
                             <button class="action-btn" data-trigger="stock"><span class="icon text-white">🍹</span>БАР (POS)</button>
@@ -89,15 +88,13 @@
                             <button class="action-btn" data-trigger="debts"><span class="icon danger-text">💸</span>ДОЛГИ</button>
                         </div>
                     </div>
-                    
                     <div class="control-section mb-20 mt-auto flex-column flex-1" style="overflow: hidden;">
                         <div class="glass-panel p-15 mb-15 flex-column flex-1" style="overflow: hidden;">
                             <div class="gold-text bold text-10 uppercase mb-10">📡 ЖУРНАЛ СОБЫТИЙ (LIVE)</div>
                             <div id="activity-feed" class="activity-feed-list"></div>
                         </div>
                         <div class="flex-row gap-10">
-                            <button class="action-btn flex-1 danger-border" id="btn-incident"><span class="icon danger-text">🚨</span>ИНЦИДЕНТ</button>
-                            <button class="action-btn flex-1 gold-border" onclick="alert('Вызов отправлен')"><span class="icon gold-text">👑</span>ПОМОЩЬ</button>
+                            <button class="action-btn flex-1 danger-border" id="btn-incident"><span class="icon danger-text">🚨</span>ПРОБЛЕМА</button>
                         </div>
                     </div>
                 </div>
@@ -105,12 +102,9 @@
             
             <div id="tab-stock" class="tab-pane hidden pos-layout h-100">
                 <div class="pos-main flex-column gap-15 h-100">
-                    <div class="flex-row gap-10">
-                        <span class="badge" style="background: rgba(212,175,55,0.08); color: var(--gold);">🔥 ХИТЫ: RedBull, Cola, Чай</span>
-                    </div>
                     <div class="flex-between align-center glass-panel" style="padding: 10px 15px;">
                         <div class="flex-row gap-5" id="pos-filter-buttons">
-                            <button class="btn-dark btn-sm active" data-cat="Все">ВСЕ ПОЗИЦИИ</button>
+                            <button class="btn-dark btn-sm active" data-cat="Все">ВСЕ</button>
                             <button class="btn-dark btn-sm" data-cat="Напитки">НАПИТКИ</button>
                             <button class="btn-dark btn-sm" data-cat="Кальян">КАЛЬЯН</button>
                             <button class="btn-dark btn-sm" data-cat="Снеки">СНЕКИ</button>
@@ -121,42 +115,38 @@
 
                 <div class="pos-cart glass-panel flex-column h-100">
                     <div class="flex-between mb-15">
-                        <h3 class="gold-text text-14 uppercase letter-spacing m-0">🛒 ЗАКАЗ</h3>
+                        <h3 class="gold-text text-14 uppercase letter-spacing m-0">🛒 ТЕКУЩИЙ ЗАКАЗ</h3>
                         <button class="btn-secondary btn-sm" id="btn-clear-cart">ОЧИСТИТЬ</button>
                     </div>
-                    
                     <div class="flex-column gap-10 mb-15">
                         <select id="pos-target" class="cyber-input" style="height: 40px; font-size: 12px;"></select>
-                        <input type="text" id="pos-guest" class="cyber-input" list="guest-datalist" placeholder="👤 Гость / Комментарий" style="height: 38px; font-size: 11px;">
+                        <input type="text" id="pos-guest" class="cyber-input" list="guest-datalist" placeholder="👤 Имя гостя / Комментарий" style="height: 38px; font-size: 11px;">
                     </div>
-
                     <div class="cart-items flex-1 border-bottom pb-15" id="pos-cart-list"></div>
-
                     <div class="cart-footer mt-15">
                         <div class="flex-between mb-15 align-end">
                             <span class="muted-text text-12 mb-5">ИТОГО:</span>
                             <span class="gold-text text-24 bold font-mono" id="pos-total">0 ₸</span>
                         </div>
-
                         <div id="pos-actions-quick" class="flex-column gap-10">
-                            <div class="flex-row gap-10">
-                                <button class="btn-dark flex-1 success-text py-15" style="border-color: rgba(46,160,67,0.3);" onclick="app.pos.checkout('НАЛ')">💵 НАЛ</button>
-                                <button class="btn-dark flex-1 blue-text py-15" style="border-color: rgba(56,139,253,0.3);" onclick="app.pos.checkout('QR')">📱 QR</button>
-                                <button class="btn-dark flex-1 danger-text py-15" style="border-color: rgba(248,81,73,0.3);" onclick="app.pos.checkout('ДОЛГ')">💸 ДОЛГ</button>
+                            <div class="flex-row gap-5">
+                                <button class="btn-dark flex-1 success-text py-15" style="border-color: rgba(46,160,67,0.3);" id="btn-pos-nal">💵 НАЛ</button>
+                                <button class="btn-dark flex-1 blue-text py-15" style="border-color: rgba(56,139,253,0.3);" id="btn-pos-qr">📱 QR</button>
+                                <button class="btn-dark flex-1 warning-text py-15" style="border-color: rgba(210,153,34,0.3);" id="btn-pos-mix">🟡 MIX</button>
                             </div>
+                            <button class="btn-dark w-100 py-15 danger-text" style="border-color: rgba(248,81,73,0.3);" id="btn-pos-debt">💸 В ДОЛГ</button>
                         </div>
-
                         <div id="pos-actions-table" class="hidden flex-column gap-10">
-                            <button class="btn-gold w-100 py-15" onclick="app.pos.sendToTable()">📥 ПРИВЯЗАТЬ К СТОЛУ</button>
+                            <button class="btn-gold w-100 py-15" id="btn-pos-send">📥 ПРИВЯЗАТЬ К СТОЛУ</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div id="tab-acc" class="tab-pane hidden"><h2 class="gold-text">ФИНАНСЫ И АРХИВ</h2><div id="archive-list"></div></div>
-            <div id="tab-inventory" class="tab-pane hidden"><h2 class="gold-text">СКЛАД</h2><div id="inventory-list"></div></div>
-            <div id="tab-debts" class="tab-pane hidden"><h2 class="danger-text">ДОЛГИ</h2><div id="debts-list"></div></div>
-            <div id="tab-crm" class="tab-pane hidden"><h2 class="gold-text">CRM ГОСТИ</h2><div id="crm-list"></div></div>
+            <div id="tab-acc" class="tab-pane hidden"><h2 class="gold-text">ФИНАНСЫ И АРХИВ</h2><div class="glass-panel"><table class="archive-table w-100"><tbody id="archive-list"></tbody></table></div></div>
+            <div id="tab-inventory" class="tab-pane hidden"><h2 class="gold-text">СКЛАД</h2><div class="glass-panel"><table class="archive-table w-100"><tbody id="inventory-list"></tbody></table></div></div>
+            <div id="tab-debts" class="tab-pane hidden"><h2 class="danger-text">ДОЛГИ</h2><div class="glass-panel"><table class="archive-table w-100"><tbody id="debts-list"></tbody></table></div></div>
+            <div id="tab-crm" class="tab-pane hidden"><h2 class="gold-text">CRM ГОСТИ</h2><div class="glass-panel"><table class="archive-table w-100"><tbody id="crm-list"></tbody></table></div></div>
         </main>
 
         <div class="mobile-bottom-nav no-print" id="mobile-nav-tabs">
@@ -170,50 +160,52 @@
 
     <div id="modal-manage-table" class="overlay hidden">
         <div class="glass-card" style="width: 350px;">
-            <div class="flex-between mb-20">
-                <h2 class="gold-text m-0">🎱 СТОЛ <span id="m-table-id">--</span></h2>
-                <div class="modal-close" onclick="app.ui.closeModals()">✕</div>
-            </div>
+            <div class="flex-between mb-20"><h2 class="gold-text m-0">🎱 СТОЛ <span id="m-table-id">--</span></h2><div class="modal-close" id="btn-close-manage">✕</div></div>
             <div class="glass-panel mb-20 text-center" style="background: #090B0E;">
                 <div class="text-24 text-white bold font-mono" id="m-table-timer">00:00:00</div>
                 <div class="text-18 gold-text bold font-mono" id="m-table-cost">0 ₸</div>
             </div>
             <div class="flex-column gap-10 hidden" id="m-actions-active">
-                <button class="btn-dark py-15" onclick="app.tables.pauseTableFromManage()">⏸ ПАУЗА / ПУСК</button>
-                <button class="btn-danger w-100 py-15" onclick="app.tables.openStopPanel()">⏹ ЗАКРЫТЬ (СЧЕТ)</button>
+                <div class="flex-row gap-10">
+                    <button class="btn-gold flex-1" id="btn-m-bar">🍹 БАР</button>
+                    <button class="btn-dark flex-1" id="btn-m-pause">⏸ ПАУЗА / ПУСК</button>
+                </div>
+                <button class="btn-danger w-100 py-15" id="btn-m-stop">⏹ ЗАКРЫТЬ СТОЛ (СЧЕТ)</button>
             </div>
             <div class="flex-column gap-10 hidden" id="m-actions-free">
-                <button class="btn-gold py-15" onclick="app.tables.startTableFromManage()">▶ ЗАПУСТИТЬ ИГРУ</button>
+                <button class="btn-gold py-15" id="btn-m-start">▶ ЗАПУСТИТЬ ИГРУ [SPACE]</button>
             </div>
         </div>
     </div>
 
     <div id="modal-stop-table" class="overlay hidden">
         <div class="glass-card" style="width: 380px;">
-            <div class="flex-between mb-20"><h2 class="danger-text m-0">ЗАКРЫТИЕ <span id="stop-table-id">--</span></h2><div class="modal-close" onclick="app.ui.closeModals()">✕</div></div>
+            <div class="flex-between mb-20"><h2 class="danger-text m-0">ЗАКРЫТИЕ <span id="stop-table-id">--</span></h2><div class="modal-close" id="btn-close-stop">✕</div></div>
             <div class="glass-panel mb-20 text-center" style="background: #090B0E;">
                 <div class="flex-between mb-10"><span class="muted-text">Аренда:</span><span class="text-white font-mono" id="stop-rent-sum">0 ₸</span></div>
                 <div class="flex-between mb-15"><span class="muted-text">Бар:</span><span class="text-white font-mono" id="stop-bar-sum">0 ₸</span></div>
                 <div class="border-bottom pb-15 mb-15" style="border-color: rgba(255,255,255,0.05);"></div>
                 <div class="huge-text gold-text font-mono" id="stop-total-sum">0 ₸</div>
             </div>
-            <div class="input-group"><input type="text" id="stop-guest-name" class="cyber-input" placeholder="Имя гостя"></div>
-            <button onclick="app.tables.confirmStopTable()" class="btn-danger big-btn mt-10">ВЫСТАВИТЬ СЧЕТ В КАССУ</button>
+            <div class="input-group"><input type="text" id="stop-guest-name" class="cyber-input" placeholder="Имя гостя для чека"></div>
+            <button id="btn-confirm-stop" class="btn-danger big-btn mt-10">ВЫСТАВИТЬ СЧЕТ В КАССУ</button>
         </div>
     </div>
 
     <div id="modal-pay" class="overlay hidden">
         <div class="glass-card fast-pay-card" style="width: 360px;">
-            <h2 class="gold-text mb-20 text-center uppercase text-14">ОПЛАТА</h2>
+            <h2 class="gold-text mb-20 text-center uppercase text-14">ОПЛАТА СЧЕТА</h2>
             <div class="huge-text text-center text-white mb-30 font-mono" id="pay-sum">0 ₸</div>
             <input type="hidden" id="pay-check-id">
             <div class="flex-column gap-10">
                 <div class="flex-row gap-10">
-                    <button class="btn-dark flex-1 py-15 success-text" style="border-color: rgba(46,160,67,0.3);" onclick="app.confirmPayActiveCheck('НАЛ')">💵 НАЛ</button>
-                    <button class="btn-dark flex-1 py-15 blue-text" style="border-color: rgba(88,166,255,0.3);" onclick="app.confirmPayActiveCheck('QR')">📱 QR</button>
+                    <button class="btn-dark flex-1 py-15 success-text" style="border-color: rgba(46,160,67,0.3);" id="btn-pay-nal">💵 НАЛ [F1]</button>
+                    <button class="btn-dark flex-1 py-15 blue-text" style="border-color: rgba(88,166,255,0.3);" id="btn-pay-qr">📱 QR [F2]</button>
+                    <button class="btn-dark flex-1 py-15 warning-text" style="border-color: rgba(210,153,34,0.3);" id="btn-pay-mix">🟡 MIX</button>
                 </div>
-                <button class="btn-dark w-100 py-15 danger-text" style="border-color: rgba(248,81,73,0.3);" onclick="app.confirmPayActiveCheck('ДОЛГ')">💸 В ДОЛГ</button>
+                <button class="btn-dark w-100 py-15 danger-text" style="border-color: rgba(248,81,73,0.3);" id="btn-pay-debt">💸 В ДОЛГ [F3]</button>
             </div>
+            <button class="btn-secondary w-100 mt-20" id="btn-close-pay">ОТМЕНА (ESC)</button>
         </div>
     </div>
 
