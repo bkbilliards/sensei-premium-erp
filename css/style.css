@@ -77,7 +77,6 @@ button:active { transform: scale(0.97); opacity: 0.9; }
 .map-view-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
 .table-card { background: #161B22; border: 1px solid #30363D; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; transition: all 0.3s ease; position: relative; overflow: hidden; min-height: 240px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);}
 .table-cloth { position: absolute; inset: 12px; border-radius: 6px; background: #1F242C; opacity: 1; transition: background 0.4s ease, box-shadow 0.4s ease; pointer-events: none; z-index: 0; border: 1px solid #30363D;}
-/* Статусы Сукна (Матовые) */
 .table-card.playing .table-cloth { background: #183323; border-color: #234E32; box-shadow: inset 0 0 40px rgba(0,0,0,0.6); }
 .table-card.paused .table-cloth { background: #3D2E15; border-color: #5C451F; box-shadow: inset 0 0 40px rgba(0,0,0,0.6); }
 .table-card.tech .table-cloth { background: #11141A; border-color: #30363D; opacity: 0.5; }
@@ -122,7 +121,7 @@ button:active { transform: scale(0.97); opacity: 0.9; }
 /* ОПЛАТЫ И СТАТУСЫ */
 .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: 1px; display: inline-flex; align-items: center; justify-content: center;}
 .badge-yellow { background: rgba(210, 153, 34, 0.15); color: var(--warning); }
-.badge-green { background: rgba(46, 160, 67, 0.15); color: var(--success); border: 1px solid rgba(46, 160, 67, 0.3); }
+.badge-green { background: rgba(63, 185, 80, 0.15); color: var(--success); border: 1px solid rgba(63, 185, 80, 0.3); }
 .badge-red { background: rgba(248, 81, 73, 0.15); color: var(--danger); }
 
 .payments-list { display: flex; flex-direction: column; gap: 8px; }
@@ -138,52 +137,36 @@ button:active { transform: scale(0.97); opacity: 0.9; }
 .finance-dashboard-layout { display: grid; grid-template-columns: 1fr 300px; gap: 30px; align-items: start; }
 .finance-main-col { display: flex; flex-direction: column; gap: 20px;}
 .finance-side-col { position: sticky; top: 20px; display: flex; flex-direction: column; height: calc(100vh - 120px); overflow: hidden;}
-
 .period-nav-bar { background: transparent; border-bottom: 1px solid var(--border); padding-bottom: 15px;}
 .p-btn { background: transparent; color: var(--gray); padding: 8px 15px; border-radius: 6px; transition: 0.2s; font-size: 10px;}
 .p-btn.active { background: #21262D; color: var(--white); border: 1px solid var(--border); }
-
 .kpi-grid-large { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-.kpi-grid-small { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .f-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; justify-content: center;}
 .f-card.f-lg { padding: 20px; }
-.f-card.f-sm { padding: 12px; }
-.f-card.f-primary { background: rgba(197, 160, 47, 0.05); border-color: rgba(197, 160, 47, 0.3); }
 .f-title { font-size: 10px; color: var(--gray); font-weight: 800; text-transform: uppercase; margin-bottom: 8px;}
 .f-val { font-size: 20px; font-weight: 900; letter-spacing: -1px; font-family: 'JetBrains Mono', monospace;}
 .f-lg .f-val { font-size: 28px; }
-.f-compare { font-size: 10px; font-weight: 700; margin-top: 5px; }
 
-/* Таблица Архива */
+/* Универсальные таблицы (Архив, Склад, CRM, Долги) */
 .archive-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;}
 .archive-table th { background: #1C2028; padding: 12px 15px; color: var(--gray); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800;}
-.archive-table td { padding: 12px 15px; border-bottom: 1px solid var(--border); color: var(--white); font-weight: 600; cursor: pointer; transition: 0.2s;}
-.archive-table tr:last-child td { border-bottom: none; }
-.archive-table tr:hover td { background: rgba(255,255,255,0.02); }
-
-.pay-tag { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 9px; font-weight: 800; letter-spacing: 1px;}
-.pay-tag.nal { background: rgba(46, 160, 67, 0.1); color: var(--success); border: 1px solid rgba(46, 160, 67, 0.3);}
-.pay-tag.qr { background: rgba(56, 139, 253, 0.1); color: var(--blue); border: 1px solid rgba(56, 139, 253, 0.3);}
+.archive-table td { padding: 12px 15px; border-bottom: 1px solid var(--border); color: var(--white); font-weight: 600;}
 .font-mono { font-family: 'JetBrains Mono', monospace; }
-
-/* ПРАВАЯ ПАНЕЛЬ ФИНАНСОВ (AI & Alerts) */
-.ai-card { border: 1px solid rgba(188, 140, 255, 0.3); background: rgba(188, 140, 255, 0.02); }
-.alert-card { border: 1px solid var(--border); }
-.alert-row { font-size: 11px; padding: 6px 10px; border-radius: 6px; font-weight: 700; display: flex; align-items: center; gap: 8px;}
-.lvl-high { background: rgba(218, 54, 51, 0.1); color: var(--danger); border-left: 2px solid var(--danger);}
-.lvl-med { background: rgba(210, 153, 34, 0.1); color: var(--warning); border-left: 2px solid var(--warning);}
-.lvl-low { background: rgba(46, 160, 67, 0.1); color: var(--success); border-left: 2px solid var(--success);}
+.archive-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
 
 /* LIVE FEED (АУДИТ) */
 .activity-feed-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 5px;}
 .feed-item { font-size: 11px; padding: 8px 10px; border-radius: 6px; display: flex; gap: 8px; align-items: center; border-bottom: 1px solid var(--border); background: transparent; }
 .feed-time { color: var(--gray); font-family: 'JetBrains Mono', monospace; }
-.feed-icon { font-size: 12px; }
+#full-audit-logs .feed-item { padding: 15px; font-size: 13px; background: rgba(255,255,255,0.02); margin-bottom: 5px; border-radius: 8px; border: none; }
 
 /* МИНИ-МОДАЛЫ И ПАНЕЛИ */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 100000; display: flex; align-items: center; justify-content: center; }
 .fast-pay-card { width: 340px; }
 .receipt-divider { border-bottom: 2px dashed #30363D; margin: 15px 0; }
+.receipt-card { width: 320px; background: #FFF; color: #000; font-family: 'JetBrains Mono', monospace; border-radius: 4px; padding: 25px; }
+.receipt-card .gold-text { color: #000 !important; font-weight: 900;}
+.receipt-card .muted-text { color: #666 !important; }
 
 .side-panel { position: fixed; top: 0; right: -100%; width: 400px; height: 100vh; background: var(--bg-card); z-index: 2000; transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); padding: 30px; display: flex; flex-direction: column; border-left: 1px solid var(--border); box-shadow: -10px 0 50px rgba(0,0,0,0.8); }
 .side-panel.active { right: 0; }
@@ -235,5 +218,8 @@ button:active { transform: scale(0.97); opacity: 0.9; }
 
 @media print {
     body * { visibility: hidden; }
+    #modal-receipt, #modal-receipt * { visibility: visible; }
+    #modal-receipt { position: absolute; left: 0; top: 0; background: none; }
+    .receipt-card { box-shadow: none; width: 100%; padding: 0; margin: 0; }
     .no-print { display: none !important; }
 }
