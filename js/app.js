@@ -12,7 +12,7 @@ const app = {
     init: async () => {
         app.auth.checkSession();
         app.setupNavigation();
-        app.setupHotkeys(); // HOTKEYS ВКЛЮЧЕНЫ
+        app.setupHotkeys(); 
         
         const { data: settings } = await supabase.from('settings').select('*').single();
         if(settings) app.state.tariffs = settings;
@@ -36,12 +36,10 @@ const app = {
         const { data: debts } = await supabase.from('debts').select('*').eq('status', 'АКТИВЕН').order('created_at', { ascending: false });
         if(debts) { app.state.debts = debts; app.debts.render(); }
 
-        // Генерация моковых логов (Для "живой" ленты)
         setTimeout(() => {
             if($('finance-activity-feed') && $('finance-activity-feed').children.length === 0) {
                 app.logActivity('Оплата QR (4500 ₸) - Стол 2', '🟢');
                 setTimeout(() => app.logActivity('Стол 4 установлен на паузу', '🟡'), 1000);
-                setTimeout(() => app.logActivity('Отмена предчека - Стол 1', '🔴'), 2500);
             }
         }, 1000);
 
@@ -487,7 +485,10 @@ const app = {
                 
                 let timerEl = $(`timer-${t.id}`);
                 let sumEl = $(`sum-${t.id}`);
-                if (timerEl) timerEl.innerText = app.math.formatTime(ms);
+                if (timerEl) {
+                    timerEl.innerText = app.math.formatTime(ms);
+                    timerEl.className = 't-timer ' + (ms < 3600000 ? 'timer-green' : (ms < 10800000 ? 'timer-yellow' : 'timer-red'));
+                }
                 if (sumEl) sumEl.innerText = total.toLocaleString() + " ₸";
             }
         });
@@ -524,6 +525,14 @@ const app = {
             $('appScreen').classList.remove('hidden');
             $('userName').innerText = app.session.user.name;
             if(!app.state.shiftStart) app.state.shiftStart = Date.now();
+            
+            // Скрытие элементов для админов
+            if (app.session.user.role !== 'owner') {
+                $$('.owner-only').forEach(el => el.style.display = 'none');
+            } else {
+                $$('.owner-only').forEach(el => el.style.display = 'flex');
+            }
+
             app.tables.render();
             app.renderChecks();
         }
